@@ -195,7 +195,7 @@ class cloudstack::mgmt (
   # Misc. stuff...
   anchor { 'anchor_misc_begin':
     require => Anchor['anchor_dbsetup_begin'],
-    before  => Anchor['anchor_misc_begin']
+    before  => Anchor['anchor_misc_end']
   }
 
   # Note that this step is only here because of the order of the
