@@ -45,15 +45,15 @@ class cloudstack::mgmt (
   $dbpassword     = 'cloud',
   $dbhost         = undef,
   $dbdeployasuser = 'root',
-) {
+  $dbrootpw       = 'rootpw',
+) inherits cloudstack::params {
   validate_string($csversion, '4.[234]*')
-  validate_boolean($setup_repo)
-  validate_boolean($localdb)
-  validate_boolean($setup_ntp)
-  validate_boolean($uses_xen)
+  validate_bool($setup_repo)
+  validate_bool($localdb)
+  validate_bool($setup_ntp)
+  validate_bool($uses_xen)
   validate_string($dbuser)
   validate_string($dbpassword)
-  validate_string($dbhost)
   validate_string($dbdeployasuser)
 
   #include cloudstack
@@ -106,9 +106,12 @@ class cloudstack::mgmt (
   # And now we come to the end of software installation.
   anchor { 'anchor_swinstall_end': }
 
-  if $localdb == true {
-    $dbhost = 'localhost'
+  $remotedbhost = $localdb ? {
+    true  => 'localhost',
+    false => $dbhost
+  }
 
+  if $localdb == true {
     # FIXME:  Need to provide more parameters to ::mysql::server,
     #   as we may have some specific requirements.
     #   Like a db password, for example...
@@ -118,22 +121,19 @@ class cloudstack::mgmt (
         'innodb_rollback_on_timeout' => '1',
         'innodb_lock_wait_timeout'   => '500',
         'max_connections'            => '350',
-        'log-bin'                    => 'mysql-bin',
+        'log-bin'                    => '/var/log/mysql-bin',
         'binlog-format'              => '\'ROW\''
       }
     }
     #include ::mysql::server
     class { '::mysql::server':
-      override_options => $override_options,
-      require          => Anchor['anchor_swinstall_end'],
-      before           => Anchor['anchor_localdb']
+      root_password           => $dbrootpw,
+      override_options        => $override_options,
+      remove_default_accounts => true,
+      service_enabled         => true,
+      require                 => Anchor['anchor_swinstall_end'],
+      before                  => Anchor['anchor_localdb']
     }
-
-    Class['Mysql::Server'] -> Service['cloudstack_management']
-
-  } else {
-    validate_string($dbhost)
-    $dbhost = $dbhost
   }
   anchor { 'anchor_localdb':
     before => Anchor['anchor_selinux_begin']
