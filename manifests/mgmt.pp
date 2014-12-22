@@ -122,7 +122,7 @@ class cloudstack::mgmt (
         'innodb_rollback_on_timeout' => '1',
         'innodb_lock_wait_timeout'   => '500',
         'max_connections'            => '350',
-        'log-bin'                    => '/var/log/mysql-bin',
+        'log-bin'                    => '/var/log/mysql/mysql-bin',
         'binlog-format'              => '\'ROW\''
       }
     }
@@ -170,7 +170,7 @@ class cloudstack::mgmt (
   # FIXME:  Need to provide for the possibility of using the
   # "-e", "-m", "-k", and "-i" options.  And securing the database connection.
   $dbstring = inline_template( "<%= \"/usr/bin/cloudstack-setup-databases \" +
-              \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}\" %>" )
+              \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
 
   if $localdb == true {
     exec { 'cloudstack_setup_localdb':
@@ -215,12 +215,6 @@ class cloudstack::mgmt (
     before  => Anchor['anchor_misc_end']
   }
 
-  service { 'cloudstack-management':
-    ensure    => running,
-    enable    => true,
-    hasstatus => true,
-    require   => Exec['cs_setup_mgmt']
-  }
 
 
   ######################################################
@@ -234,7 +228,8 @@ class cloudstack::mgmt (
     mode    => '0777',
     owner   => '0',
     target  => 'tomcat6-nonssl.conf',
-    require => Exec['cs_setup_mgmt']
+    require => Exec['cs_setup_mgmt'],
+    before  => Anchor['anchor_misc_end']
   }
 
   file { '/usr/share/cloudstack-management/conf/server.xml':
@@ -243,11 +238,21 @@ class cloudstack::mgmt (
     mode    => '0777',
     owner   => '0',
     target  => 'server-nonssl.xml',
-    require => Exec['cs_setup_mgmt']
+    require => Exec['cs_setup_mgmt'],
+    before  => Anchor['anchor_misc_end']
   }
 
   anchor { 'anchor_misc_end':
     require => Anchor['anchor_misc_begin']
+  }
+
+  # Finally, we start cloudstack...
+
+  service { 'cloudstack-management':
+    ensure    => running,
+    enable    => true,
+    hasstatus => true,
+    require   => Anchor['anchor_misc_end']
   }
 
 ######################################################
