@@ -1,23 +1,21 @@
-# Class: cloudstack::mgmt
+#
+## Class: cloudstack::mgmt
 #
 # This class builds the CloudStack management node
 #
-# FIXME:  Need to define parameters...
 # Parameters:
-#   $csversion (string, default = '4.2'): Set the version of Cloudstack to be used
-#
-#   $setup_repo (boolean, default = true): Do we want this module to setup the yum repo?
-#
-# $localdb (boolean, default = true):  If true, use a local
-# mysql database instance.  If not, specify it via the $dbhost parameter.
-#
-# $dbhost (string, default = undef): Remote database host only used if
-# $localdb is false.
-#
-#
-# $uses_xen (boolean, default = false): If true, downloads the vhd-util
-# binary and places it on the management server.  Should be safe to
-# flip to true after initial install.
+#   $csversion (string): Set the version of Cloudstack to be used
+#   $setup_repo (boolean): Do we want this module to setup the yum repo?
+#   $mgmt_port (string): Default port for unauthenticated management
+#   $localdb (boolean): Will the mysql database be located on this host?
+#   $setup_ntp (boolean): Setup NTP on this host?  Just an include - you have to configure it
+#     yourself.
+#   $uses_xen (boolean): If we use Xen at all, set this so that we can download vhd_util.
+#   $dbuser (string): Name of the Cloudstack database user
+#   $dbpassword (string): Password for the Cloudstack db user
+#   $dbhost (string): hostname of the remote database server.  Only used if $localdb is false.
+#   $dbdeployasuser (string): Administrative user of the database.  You shouldn't need to change this.
+#   $dbrootpw (string): Password for the administrative db user.
 #
 # FIXME:  Need to rewrite this when finished...
 # Actions:
@@ -46,7 +44,7 @@ class cloudstack::mgmt (
   $dbhost         = undef,
   $dbdeployasuser = 'root',
   $dbrootpw       = 'rootpw',
-) inherits cloudstack::params {
+) {
   validate_string($csversion, '4.[2345]')
   validate_bool($setup_repo)
   validate_bool($localdb)
@@ -113,17 +111,11 @@ class cloudstack::mgmt (
   }
 
   if $localdb == true {
-    # FIXME:  Need to provide more parameters to ::mysql::server,
-    #   as we may have some specific requirements.
-    #   Like a db password, for example...
-
     $override_options = {
       'mysqld' => {
         'innodb_rollback_on_timeout' => '1',
         'innodb_lock_wait_timeout'   => '500',
-        'max_connections'            => '350',
-        'log-bin'                    => '/var/log/mysql/mysql-bin',
-        'binlog-format'              => '\'ROW\''
+        'max_connections'            => '350'
       }
     }
     #include ::mysql::server
