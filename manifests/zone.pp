@@ -1,4 +1,5 @@
-# Defined resource type: cloudstack::zone
+#
+## Defined resource type: cloudstack::zone
 #
 # This defined type is used to identify a CloudStack zone
 #
@@ -18,9 +19,9 @@
 # }
 #
 define cloudstack::zone(
-  $zone_dns='8.8.8.8',
-  $zone_internal_dns='8.8.8.8',
-  $networktype='Basic'
+  $zone_dns = '8.8.8.8',
+  $zone_internal_dns = '8.8.8.8',
+  $networktype = 'Basic'
   ) {
     $teststring = inline_template( "<%= \"http://localhost:\" +
       \"${cloudstack::params::mgmt_port}/?command=listZones&\" +

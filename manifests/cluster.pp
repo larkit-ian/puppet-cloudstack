@@ -17,7 +17,7 @@
 #   zone_dns => 'myinternaldns',
 # }
 #
-define cloudstack::cluster(
+define cloudstack::cluster (
   $zoneid,
   $podid,
   $clustertype = 'CloudManaged',
