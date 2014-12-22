@@ -44,7 +44,7 @@ class cloudstack::mgmt (
   $dbhost         = undef,
   $dbdeployasuser = 'root',
   $dbrootpw       = 'rootpw',
-) {
+) inherits cloudstack::params {
   validate_string($csversion, '4.[2345]')
   validate_bool($setup_repo)
   validate_bool($localdb)
