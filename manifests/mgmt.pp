@@ -44,7 +44,7 @@ class cloudstack::mgmt (
   $dbuser         = 'cloud',
   $dbpassword     = 'cloud',
   $dbhost         = undef,
-  $dbdeployasuser = 'root'
+  $dbdeployasuser = 'root',
 ) {
   validate_string($csversion, '4.[234]*')
   validate_boolean($setup_repo)
@@ -122,11 +122,10 @@ class cloudstack::mgmt (
         'binlog-format'              => '\'ROW\''
       }
     }
-        'innodb_rollback_on_timeout' => '1',
     #include ::mysql::server
     class { '::mysql::server':
-      override_options => $override_options
-      require          => Anchor['anchor_swinstall_end']
+      override_options => $override_options,
+      require          => Anchor['anchor_swinstall_end'],
       before           => Anchor['anchor_localdb']
     }
 
@@ -148,13 +147,13 @@ class cloudstack::mgmt (
   # FIXME:  No need to replace the config file when disabling SELinux...
   file { '/etc/selinux/config':
     source  => 'puppet:///modules/cloudstack/config',
-    require => Anchor['anchor_selinux_begin']
+    require => Anchor['anchor_selinux_begin'],
     before  => Anchor['anchor_selinux_end']
   }
   exec { 'disable_selinux':
     command => '/usr/sbin/setenforce 0',
     onlyif  => '/usr/sbin/getenforce | grep Enforcing',
-    require => Anchor['anchor_selinux_begin']
+    require => Anchor['anchor_selinux_begin'],
     before  => Anchor['anchor_selinux_end']
   }
   anchor { 'anchor_selinux_end':
@@ -176,7 +175,7 @@ class cloudstack::mgmt (
     exec { 'cloudstack_setup_localdb':
       command => $dbstring,
       creates => '/var/lib/mysql/cloud',
-      require => Anchor['anchor_dbsetup_begin']
+      require => Anchor['anchor_dbsetup_begin'],
       before  => Anchor['anchor_dbsetup_end']
     }
   } else {
@@ -184,7 +183,7 @@ class cloudstack::mgmt (
       command => $dbstring,
       # FIXME:  How can we tell that the remote db is setup?  What needs to be in place?
       #unless '
-      require => Anchor['anchor_dbsetup_begin']
+      require => Anchor['anchor_dbsetup_begin'],
       before  => Anchor['anchor_dbsetup_end']
     }
   }
@@ -209,7 +208,7 @@ class cloudstack::mgmt (
   }
     
   exec { 'cs_setup_mgmt':
-    command => '/usr/bin/cloudstack-setup-management':
+    command => '/usr/bin/cloudstack-setup-management',
     unless  => '/usr/bin/test -e /etc/sysconfig/cloudstack-management',
     require => Anchor['anchor_misc_begin'],
     before  => Anchor['anchor_misc_end']

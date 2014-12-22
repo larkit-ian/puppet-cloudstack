@@ -32,10 +32,10 @@ class cloudstack (
     yumrepo{ 'cloudstack':
       baseurl  => "http://cloudstack.apt-get.eu/rhel/${csversion}/",
       enabled  => '1',
-      gpgcheck => '0'
+      gpgcheck => '0',
       before   => Package['cloudstack-management']
     }
-
+  }
 
   # FIXME - could this be a stanza in /etc/sudoers.d?  Depends on the OS.
   # Answer: make this more OS-sensitive.  Maybe use the sudo module?
