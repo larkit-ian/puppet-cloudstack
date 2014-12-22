@@ -4,6 +4,9 @@
 #
 # FIXME:  Need to define parameters...
 # Parameters:
+#   $csversion (string, default = '4.2'): Set the version of Cloudstack to be used
+#
+#   $setup_repo (boolean, default = true): Do we want this module to setup the yum repo?
 #
 # $localdb (boolean, default = true):  If true, use a local
 # mysql database instance.  If not, specify it via the $dbhost parameter.
@@ -53,21 +56,16 @@ class cloudstack::mgmt (
   validate_string($dbhost)
   validate_string($dbdeployasuser)
 
-  include cloudstack::base
+  #include cloudstack
+  class { 'cloudstack':
+    csversion  => $csversion,
+    setup_repo => $setup_repo,
+    before     => Package['cloudstack-management']
+  }
 
   # We require NTP, somehow...
   if $setup_ntp == true {
     include ::ntp
-  }
-
-  # If specified, we want the repo.  No effect if family != RedHat
-  if $setup_repo == true and $::osfamily == 'RedHat' {
-    yumrepo{ 'cloudstack':
-      baseurl  => "http://cloudstack.apt-get.eu/rhel/${csversion}/",
-      enabled  => '1',
-      gpgcheck => '0'
-      before   => Package['cloudstack-management']
-    }
   }
 
   # Fix for known bug in 4.3.0 release...

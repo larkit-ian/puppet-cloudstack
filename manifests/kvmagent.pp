@@ -13,12 +13,19 @@
 #
 # Sample Usage:
 #
-class cloudstack::kvmagent {
-  include cloudstack
+class cloudstack::kvmagent (
+  $csversion = '4.2',
+  $setup_repo = true,
+) {
+  #include cloudstack
+  class { 'cloudstack':
+    csversion  => $csversion,
+    setup_repo => $setup_repo,
+    before     => Package['cloudstack-agent']
+  }
 
   package { 'cloudstack-agent':
     ensure  => present,
-    require => Yumrepo[ 'cloudstack' ],
   }
 
   package { 'NetworkManager':
@@ -28,9 +35,10 @@ class cloudstack::kvmagent {
   service { 'network':
     ensure    => running,
     hasstatus => true,
-    require   => Package[ 'cloudstack-agent' ],
+    require   => Package['cloudstack-agent'],
   }
 
+  # FIXME
   # Needs params
   #exec { '/usr/bin/cloudstack-setup-agent':
   #  creates  => '/var/log/cloud/setupAgent.log',
@@ -45,8 +53,8 @@ class cloudstack::kvmagent {
 
   file { '/etc/cloudstack/agent/agent.properties':
     ensure  => present,
-    require => Package[ 'cloudstack-agent' ],
-    content => template( 'cloudstack/agent.properties.erb' ),
+    require => Package['cloudstack-agent'],
+    content => template('cloudstack/agent.properties.erb'),
   }
 
 ################## Firewall stuff #########################
