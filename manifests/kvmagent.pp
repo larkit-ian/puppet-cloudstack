@@ -46,7 +46,7 @@ class cloudstack::kvmagent {
   file { '/etc/cloudstack/agent/agent.properties':
     ensure  => present,
     require => Package[ 'cloudstack-agent' ],
-    content => template( 'cloudstack/agent.properties' ),
+    content => template( 'cloudstack/agent.properties.erb' ),
   }
 
 ################## Firewall stuff #########################
