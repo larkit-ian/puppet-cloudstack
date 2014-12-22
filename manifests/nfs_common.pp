@@ -16,6 +16,8 @@ class cloudstack::nfs_common (
   $sysvm_url_xen             = 'http://download.cloud.com/releases/2.2.0/systemvm.vhd.bz2'
 ) {
 
+  # FIXME:  Note that this means that we're not setting any parameters for the cloudstack class.
+  # You should provide them via Hiera at this point...
   include cloudstack
 
   package {'nfs-utils':
