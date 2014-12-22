@@ -3,6 +3,9 @@
 # This class installs the base CloudStack components
 #
 # Parameters:
+#   $version (string, default to '4.2'): Set the version of Cloudstack to be installed.
+#
+#   $setup_repo (boolean, default to true): Do we want Puppet to setup a yum repo for CS?
 #
 # Actions:
 #   Install the CloudStack repository: [cloudstack]
@@ -18,22 +21,26 @@
 # Sample Usage:
 # This class should not be included directly.  It is called from other modules.
 #
-class cloudstack {
-  include cloudstack::params
+class cloudstack (
+  $version    = '4.2',
+  $setup_repo = true
+) {
+  validate_boolean($setup_repo)
+  validate_string($version, '4.[234]')
 
+  include cloudstack::params
 
   resources { 'host':
     name  => 'host',
     purge => true,
   }
 
-
-  yumrepo{ 'cloudstack':
-    baseurl  => 'http://cloudstack.apt-get.eu/rhel/4.2/',
-    # baseurl  => 'http://cloudstack.apt-get.eu/rhel/4.1/',
-    # baseurl  => 'http://cloudstack.apt-get.eu/rhel/4.0/',
-    enabled  => '1',
-    gpgcheck => '0',
+  if $setup_repo == true {
+    yumrepo{ 'cloudstack':
+      baseurl  => "http://cloudstack.apt-get.eu/rhel/${version}/",
+      enabled  => '1',
+      gpgcheck => '0',
+    }
   }
 
   file_line { 'cs_sudo_rule':
