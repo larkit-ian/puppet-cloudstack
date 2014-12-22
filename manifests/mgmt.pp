@@ -47,7 +47,7 @@ class cloudstack::mgmt (
   $dbdeployasuser = 'root',
   $dbrootpw       = 'rootpw',
 ) inherits cloudstack::params {
-  validate_string($csversion, '4.[234]*')
+  validate_string($csversion, '4.[2345]')
   validate_bool($setup_repo)
   validate_bool($localdb)
   validate_bool($setup_ntp)
@@ -68,8 +68,8 @@ class cloudstack::mgmt (
     include ::ntp
   }
 
-  # Fix for known bug in 4.3.0 release...
-  if $::operatingsystem == 'Ubuntu' and $csversion == '4.3.0' {
+  # Fix for known bug in 4.3 release...
+  if $::operatingsystem == 'Ubuntu' and $csversion == '4.3' {
     package { 'libmysql-java':
       ensure => installed,
       before => Package['cloudstack-management']
@@ -85,11 +85,12 @@ class cloudstack::mgmt (
   if $uses_xen == true {
     $vhd_url  = 'http://download.cloud.com.s3.amazonaws.com/tools/vhd-util'
     $vhd_path = '/usr/share/cloudstack-common/scripts/vm/hypervisor/xenserver'
-    $vhd_download_command = "/usr/bin/wget ${vhd_url} -O ${vhd_path}"
+    $vhd_download_command = "/usr/bin/wget ${vhd_url} -O ${vhd_path}/vhd_util"
 
     exec { 'download_vhd_util':
       command => $vhd_download_command,
       creates => "${vhd_path}/vhd_util",
+      require => Package['cloudstack-management'],
       before  => File['vhd_util']
     }
     file { 'vhd_util':
