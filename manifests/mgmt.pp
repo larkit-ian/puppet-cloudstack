@@ -1,4 +1,4 @@
-# Class: cloudstack
+# Class: cloudstack::mgmt
 #
 # This class builds the CloudStack management node
 #
@@ -31,7 +31,7 @@
 # FIXME:  Need to update...
 # Sample Usage:
 #
-class cloudstack (
+class cloudstack::mgmt (
   $csversion      = '4.2',
   $setup_repo     = true,
   $mgmt_port      = '8096',
