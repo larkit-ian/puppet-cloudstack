@@ -4,6 +4,12 @@
 #
 # Parameters:
 #
+# $localdb (boolean, default = true):  If true, use a local mysql database instance.  If not,
+# specify it via the $remotedbhost paramter.
+#
+# $remotedbhost (string, default = undef): Remote database host only used if $localdb is false.
+#
+#
 # Actions:
 # Install the cloud-client package
 # Install cloud database only if MySQL is installed and configured
@@ -17,27 +23,40 @@
 # Sample Usage:
 # This class should not be included directly.  It is called from other modules.
 #
-class cloudstack::mgmt {
+class cloudstack::mgmt (
+  $localdb      = true,
+  $remotedbhost = undef,
+) {
+  validate_boolean($localdb)
   include cloudstack
-#  include mysql::server   #
-## We really want to specify this - but in the absence of this
 
-########### MYSQL section #########
-  package { 'mysql-server':
-    ensure => present,
-    }
+  if $localdb == true {
+    #  include mysql::server   #
+    ## We really want to specify this - but in the absence of this
 
-  service { 'mysqld':
-    ensure    => running,
-    enable    => true,
-    hasstatus => true,
-    require   => Package[ 'mysql-server' ],
+    ########### MYSQL section #########
+      package { 'mysql-server':
+        ensure => present,
+        }
+
+      service { 'mysqld':
+        ensure    => running,
+        enable    => true,
+        hasstatus => true,
+        require   => Package[ 'mysql-server' ],
+      }
+
+    ######### END MYSQL #####################################
+
+    $dbhost = 'localhost'
+  } else {
+    validate_string($remotedbhost)
+    $dbhost = $remotedbhost
   }
-
-######### END MYSQL #####################################
+    
 
   $dbstring = inline_template( "<%= \"/usr/bin/cloudstack-setup-databases \" +
-              \"cloud:dbpassword@localhost --deploy-as=root\" %>" )
+              \"cloud:dbpassword@${dbhost} --deploy-as=root\" %>" )
 # If you are using a separate database or different passwords, change it above
 
 
@@ -59,6 +78,7 @@ class cloudstack::mgmt {
     Exec[ 'cloudstack_setup_databases' ] ],
   }
 
+  # FIXME - If we don't want a local db, then we shouldn't require "Service[mysqld]".  Need to fix.
   exec { 'cloudstack_setup_databases':
     command => $dbstring,
     creates => '/var/lib/mysql/cloud',
@@ -73,17 +93,17 @@ class cloudstack::mgmt {
 
   file { '/etc/cloudstack/management/tomcat6.conf':
     ensure => 'link',
-    group  => '0',
-    mode   => '0777',
-    owner  => '0',
+    group  => '0', # FIXME
+    mode   => '0777', # FIXME
+    owner  => '0', # FIXME
     target => 'tomcat6-nonssl.conf',
   }
 
   file { '/usr/share/cloudstack-management/conf/server.xml':
-    ensure => 'link',
-    group  => '0',
-    mode   => '0777',
-    owner  => '0',
+    ensure => 'link', # FIXME
+    group  => '0', # FIXME
+    mode   => '0777', # FIXME
+    owner  => '0', # FIXME
     target => 'server-nonssl.xml',
   }
 
