@@ -4,12 +4,13 @@
 # This defined type is used to identify a CloudStack zone
 #
 # Parameters:
-# zone_dns (string): The 1st external DNS server
-# zone_dns2 (string): The 2nd external DNS server
-# zone_internal_dns (string): The 1st internal DNS server
-# zone_internal_dns2 (string): The 2nd internal DNS server
-# networktype (string): Network type to use for zone.  Valid options are
+# (optional) zone_dns (string): The 1st external DNS server
+# (optional) zone_dns2 (string): The 2nd external DNS server
+# (optional) zone_internal_dns (string): The 1st internal DNS server
+# (optional) zone_internal_dns2 (string): The 2nd internal DNS server
+# (optional) networktype (string): Network type to use for zone.  Valid options are
 #   "Advanced" and "Basic".
+# (optional) networkdomain (string): DNS domain to use for zone.  Valid options are
 #
 # Actions:
 #
