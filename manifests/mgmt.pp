@@ -17,7 +17,6 @@
 #   $dbdeployasuser (string): Administrative user of the database.  You shouldn't need to change this.
 #   $dbrootpw (string): Password for the administrative db user.
 #
-# FIXME:  Need to rewrite this when finished...
 # Actions:
 #   Install NTP, if desired
 #   Install the cloudstack-management package
@@ -29,7 +28,6 @@
 #   Add Tomcat symlinks
 #   Open appropriate iptables ports
 #
-# FIXME:  Need to update...
 # Requires:
 #
 # Package[ 'sudo' ]
@@ -38,6 +36,10 @@
 #
 # FIXME:  Need to update...
 # Sample Usage:
+#
+# TODO:
+#   Need to open up the unauthenticated API port JUST for localhost.
+#   Firewall it from everything else.  But we need it to setup cs objects.
 #
 class cloudstack::mgmt (
   $csversion      = '4.2',
