@@ -22,14 +22,22 @@ class cloudstack (
   $setup_repo = true,
 ) {
 
-  # FIXME - Is this dangerous?  I don't know what it does...
+  # Clear out entries from /etc/hosts... this might be a little dangerous...
   resources { 'host':
     name  => 'host',
     purge => true,
   }
 
+  host { 'localhost':
+    ensure       => present,
+    ip           => '127.0.0.1',
+    host_aliases => [ $::fqdn, 'localhost.localdomain', $::hostname ],
+  }
+
   if $setup_repo == true and $::osfamily == 'RedHat' {
     yumrepo{ 'cloudstack':
+      ensure   => present,
+      descr    => "Cloudstack ${csversion} repository",
       baseurl  => "http://cloudstack.apt-get.eu/rhel/${csversion}/",
       enabled  => '1',
       gpgcheck => '0',
@@ -42,12 +50,6 @@ class cloudstack (
   file_line { 'cs_sudo_rule':
     path => '/etc/sudoers',
     line => 'cloud ALL = NOPASSWD : ALL',
-  }
-
-  host { 'localhost':
-    ensure       => present,
-    ip           => '127.0.0.1',
-    host_aliases => [ $::fqdn, 'localhost.localdomain', $::hostname ],
   }
 
   package { 'wget': ensure => present } # Not needed after 2.2.9, see bug 11258
