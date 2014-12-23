@@ -19,15 +19,22 @@
 #
 # FIXME:  Need to rewrite this when finished...
 # Actions:
-# Install the cloud-client package
-# Install cloud database only if MySQL is installed and configured
-# Run cloud-setup-management script
-# Open appropriate iptables ports
+#   Install NTP, if desired
+#   Install the cloudstack-management package
+#   Download and install vhd_util if we’re using Xen ($uses_xen = true)
+#   Install cloud database only if MySQL is installed and configured ($localdb = true)
+#   Disable selinux
+#   Run cloud-setup-databases
+#   Run cloud-setup-management script
+#   Add Tomcat symlinks
+#   Open appropriate iptables ports
 #
 # FIXME:  Need to update...
 # Requires:
 #
 # Package[ 'sudo' ]
+# puppetlabs/ntp
+# puppetlabs/mysql
 #
 # FIXME:  Need to update...
 # Sample Usage:
@@ -247,6 +254,7 @@ class cloudstack::mgmt (
     require   => Anchor['anchor_misc_end']
   }
 
+# FIXME:  Deal with firewall ports
 ######################################################
 ############ firewall section ########################
 ######################################################
