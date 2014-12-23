@@ -22,17 +22,17 @@ define cloudstack::zone(
   $zone_dns = '8.8.8.8',
   $zone_internal_dns = '8.8.8.8',
   $networktype = 'Basic'
-  ) {
-    $teststring = inline_template( "<%= \"http://localhost:\" +
-      \"${cloudstack::params::mgmt_port}/?command=listZones&\" +
-      \"available=true\" %>" )
-    $reststring = inline_template( "<%= \"http://localhost:\" +
-      \"${cloudstack::params::mgmt_port}/?command=createZone&dns1\" +
-      \"=${zone_internal_dns}&internaldns1=${zone_internal_dns}\" +
-      \"&name=${name}&networktype=${networktype}\" %>" )
+) {
+  $teststring = inline_template( "<%= \"http://localhost:\" +
+    \"${cloudstack::params::mgmt_port}/?command=listZones&\" +
+    \"available=true\" %>" )
+  $reststring = inline_template( "<%= \"http://localhost:\" +
+    \"${cloudstack::params::mgmt_port}/?command=createZone&dns1\" +
+    \"=${zone_internal_dns}&internaldns1=${zone_internal_dns}\" +
+    \"&name=${name}&networktype=${networktype}\" %>" )
 
-    exec { "/usr/bin/curl \'${reststring}\'":
-      onlyif  => "/usr/bin/curl \'${teststring}\' | grep -v ${name}",
-      require => Anchor['cloudstack::mgmt::anchor_dbsetup_end'],
-    }
+  exec { "/usr/bin/curl \'${reststring}\'":
+    onlyif  => "/usr/bin/curl \'${teststring}\' | grep -v ${name}",
+    require => Anchor['cloudstack::mgmt::anchor_dbsetup_end'],
+  }
 }
