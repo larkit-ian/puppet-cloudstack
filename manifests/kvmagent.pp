@@ -17,7 +17,6 @@ class cloudstack::kvmagent (
   $csversion = '4.2',
   $setup_repo = true,
 ) {
-  #include cloudstack
   class { 'cloudstack':
     csversion  => $csversion,
     setup_repo => $setup_repo,
