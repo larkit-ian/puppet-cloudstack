@@ -186,7 +186,7 @@ class cloudstack::mgmt (
       command => $dbstring,
       # FIXME:  How can we tell that the remote db is setup?  What needs to be in place?
       # Answer:  A database query.  Check if the db exists...
-      unless => "/usr/bin/mysql -u${dbuser} -p${dbpasword} -h ${dbhost} cloud",
+      unless  => "/usr/bin/mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud",
       require => Anchor['anchor_dbsetup_begin'],
       before  => Anchor['anchor_dbsetup_end']
     }
@@ -257,6 +257,11 @@ class cloudstack::mgmt (
     hasstatus => true,
     require   => Anchor['anchor_misc_end']
   }
+
+  # We also want cloudmonkey...
+
+  include cloudstack::cloudmonkey
+  Anchor['anchor_misc_end'] -> Class['::cloudstack::cloudmonkey']
 
 # FIXME:  Deal with firewall ports
 ######################################################
