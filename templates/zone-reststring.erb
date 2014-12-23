@@ -1,0 +1,17 @@
+"http://localhost:<%= @mgmt_port -%>
+/?command=createZone&dns1=<%= @zone_dns -%>
+&internaldns1=<%= @zone_internal_dns -%>
+&name=<%= @name -%>
+&networktype=<%= @networktype -%>
+<% if @zone_dns2 != '' -%>
+&dns2=<%= @zone_dns2 -%>
+<% end -%>
+<% if @zone_internal_dns2 != '' -%>
+&internaldns2=<%= @zone_internal_dns2 -%>
+<% end -%>
+<% if @networkdomain != '' -%>
+&domain=<%= @networkdomain -%>
+<% end -%>
+<% if @networktype != '' -%>
+&networktype=<%= @networktype -%>
+<% end %>"

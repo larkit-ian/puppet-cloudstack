@@ -4,9 +4,12 @@
 # This defined type is used to identify a CloudStack zone
 #
 # Parameters:
-# zone_dns - The external DNS server
-# zone_internal_dns - Internal DNS server
-# networktype - Network type to use for zone.  Valid options are
+# zone_dns (string): The 1st external DNS server
+# zone_dns2 (string): The 2nd external DNS server
+# zone_internal_dns (string): The 1st internal DNS server
+# zone_internal_dns2 (string): The 2nd internal DNS server
+# networktype (string): Network type to use for zone.  Valid options are
+#   "Advanced" and "Basic".
 #
 # Actions:
 #
@@ -19,20 +22,31 @@
 # }
 #
 define cloudstack::zone(
-  $zone_dns = '8.8.8.8',
-  $zone_internal_dns = '8.8.8.8',
-  $networktype = 'Basic'
+  $zone_dns              = '8.8.8.8',
+  $zone_dns2             = '4.4.4.4',
+  $zone_internal_dns     = '8.8.8.8',
+  $zone_internal_dns2    = '4.4.4.4',
+  $networktype           = 'Basic',
+  $networkdomain         = '',
 ) {
-  $teststring = inline_template( "<%= \"http://localhost:\" +
-    \"${cloudstack::params::mgmt_port}/?command=listZones&\" +
-    \"available=true\" %>" )
-  $reststring = inline_template( "<%= \"http://localhost:\" +
-    \"${cloudstack::params::mgmt_port}/?command=createZone&dns1\" +
-    \"=${zone_internal_dns}&internaldns1=${zone_internal_dns}\" +
-    \"&name=${name}&networktype=${networktype}\" %>" )
+  validate_string($zone_dns)
+  validate_string($zone_dns2)
+  validate_string($zone_internal_dns)
+  validate_string($zone_internal_dns2)
+  validate_string($networktype)
+  validate_re($networktype, [ '^Basic$', '^Advanced$' ])
+  validate_string($networkdomain)
 
-  exec { "/usr/bin/curl \'${reststring}\'":
-    onlyif  => "/usr/bin/curl \'${teststring}\' | grep -v ${name}",
-    require => Anchor['cloudstack::mgmt::anchor_dbsetup_end'],
+  include cloudstack::mgmt
+
+  $mgmt_port = $cloudstack::mgmt::mgmt_port
+
+  $teststring = template('cloudstack/zone-teststring.erb')
+  $reststring = template('cloudstack/zone-reststring.erb')
+
+  exec { "check_zone_exists_${name}":
+    command => "/usr/bin/curl ${reststring}",
+    unless  => "/usr/bin/curl -s \"${teststring}\" | /bin/grep -q ${name} 2>/dev/null",
+    require => Anchor['anchor_dbsetup_end'],
   }
 }
