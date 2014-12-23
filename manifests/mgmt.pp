@@ -75,7 +75,7 @@ class cloudstack::mgmt (
   }
 
   package { 'cloudstack-management':
-    ensure => present,
+    ensure => latest,
     before => Anchor['anchor_swinstall_end']
   }
 
