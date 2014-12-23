@@ -16,11 +16,12 @@
 #
 # Requires:
 #
-#
 # Sample Usage:
-# cloudstack::zone { 'samplezone':
-#   zone_dns => 'myinternaldns',
-# }
+#
+#   $myinternaldns = '1.1.1.1'
+#   cloudstack::zone { 'samplezone':
+#     zone_dns => $myinternaldns,
+#   }
 #
 define cloudstack::zone(
   $zone_dns              = '8.8.8.8',
@@ -42,7 +43,7 @@ define cloudstack::zone(
 
   $mgmt_port = $cloudstack::mgmt::mgmt_port
 
-  $teststring = template('cloudstack/zone-teststring.erb')
+  $teststring = inline_template("http://localhost:<%= @mgmt_port %>/?command=listZones&name=<%= @name %>")
   $reststring = template('cloudstack/zone-reststring.erb')
 
   exec { "check_zone_exists_${name}":
