@@ -40,6 +40,6 @@ define cloudstack::pod(
         "/usr/bin/curl \'${teststring_zone}\' | grep ${zoneid}",
         "/usr/bin/curl \'${teststring_pod}\' | grep -v ${pod}",
       ],
-      require => Anchor['cloudstack::mgmt::anchor_dbsetup_end'],
+      require => Anchor['anchor_dbsetup_end'],
     }
 }
