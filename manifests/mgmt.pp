@@ -169,7 +169,8 @@ class cloudstack::mgmt (
   }
 
   # FIXME:  Need to provide for the possibility of using the
-  # "-e", "-m", "-k", and "-i" options.  And securing the database connection.
+  # "-e", "-m", "-k", and "-i" options.  And securing the database connection
+  # with SSL.
   $dbstring = inline_template( "<%= \"/usr/bin/cloudstack-setup-databases \" +
               \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
 
@@ -184,7 +185,8 @@ class cloudstack::mgmt (
     exec { 'cloudstack_setup_remotedb':
       command => $dbstring,
       # FIXME:  How can we tell that the remote db is setup?  What needs to be in place?
-      #unless '
+      # Answer:  A database query.  Check if the db exists...
+      unless => "/usr/bin/mysql -u${dbuser} -p${dbpasword} -h ${dbhost} cloud",
       require => Anchor['anchor_dbsetup_begin'],
       before  => Anchor['anchor_dbsetup_end']
     }
