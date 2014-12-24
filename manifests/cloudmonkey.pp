@@ -31,15 +31,19 @@ class cloudstack::cloudmonkey {
  
   $scriptnames = [ 'cm_create_pod.sh', 'cm_add_cluster.sh' ]
 
-  file { $scriptnames:
+  File {
     ensure => present,
-    path   => "/usr/local/bin/${scriptnames}",
     mode   => '0700',
     owner  => 'root',
     group  => 'root',
     # FIXME:  SELinux labels needed here.
-    source => "puppet:///modules/cloudstack/${scriptnames}",
     require => Exec['install_cloudmonkey']
-  } 
+  }
+
+  file {
+    '/usr/local/bin/cm_create_pod.sh':
+      source => "puppet:///modules/cloudstack/cm_create_pod.sh";
+    '/usr/local/bin/cm_add_cluster.sh':
+      source => "puppet:///modules/cloudstack/cm_add_cluster.sh";
   } 
 }
