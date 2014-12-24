@@ -3,11 +3,11 @@
 # This defined type is used to identify a CloudStack pod
 #
 # Parameters:
-# (optional) zone_dns - The 1st external DNS server
-# (optional) zone_dns2 - The 2nd external DNS server
-# (optional) zone_internal_dns - The 1st internal DNS server
-# (optional) zone_internal_dns2 - The 2nd internal DNS server
-# (optional) networktype - Network type to use for zone.  Valid options are
+# gateway - Default Gateway for the pod
+# netmask - Netmask for the pod
+# startip - Starting IP address for the pod
+# endip - Ending IP address for the pod
+# zonename - Zone name to use for the pod
 #
 # Actions:
 #
@@ -16,9 +16,15 @@
 #
 # Sample Usage:
 # cloudstack::pod { 'samplezone':
-#   zone_dns => 'myinternaldns',
+#   gateway  => '192.168.99.1',
+#   netmask  => '255.255.255.0',
+#   startip  => '192.168.99.50',
+#   endip    => '192.168.99.100',
+#   zonename => 'zone1'
 # }
 #
+# FIXME:  Make this use the API again rather than cloudmonkey eventually...
+# #
 define cloudstack::pod(
   $gateway,
   $netmask,
@@ -51,7 +57,7 @@ define cloudstack::pod(
   # Is the zone there?
   #
   exec { "create_pod_${name}_in_zone_${zonename}":
-    command => "/usr/local/bin/cm_createpod \"${name}\" \"${zonename}\" \"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\"",
+    command => "/usr/local/bin/cm_createpod.sh \"${name}\" \"${zonename}\" \"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\"",
     require => [ Anchor['anchor_dbsetup_end'], Cloudstack::Zone[$zonename] ]
   }
 }
