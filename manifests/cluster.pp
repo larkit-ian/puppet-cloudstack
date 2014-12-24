@@ -58,7 +58,7 @@ define cloudstack::cluster (
 #    require => Anchor['anchor_dbsetup_end']
 #  }
   exec { "create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}":
-    command => "/usr/local/bin/cm_addcluster.sh \"${name}\" \"${clustertype}\" \"${hypervisor}\" \"${podname}\" \"${zonename}\"",
+    command => "/usr/local/bin/cm_add_cluster.sh \"${name}\" \"${clustertype}\" \"${hypervisor}\" \"${podname}\" \"${zonename}\"",
     require => [ Anchor['anchor_dbsetup_end'], Cloudstack::Pod[$podname] ]
   }
 }
