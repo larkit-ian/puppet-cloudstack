@@ -56,6 +56,9 @@ define cloudstack::pod(
   $execparms2 = "\"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\""
 
   include ::cloudstack
+  include ::cloudstack::cloudmonkey
+
+  $cmd = $::cloudstack::cloudmonkey::create_pod
 
   #$teststring_zone = inline_template( "<%= \"http://localhost:\" +
   #               \"${::cloudstack::mgmt_port}/?command=listZones&\" +
@@ -71,7 +74,7 @@ define cloudstack::pod(
   # Is the zone there?
   #
   exec { "create_pod_${name}_in_zone_${zonename}":
-    command => "/usr/local/bin/cm_create_pod.sh ${execparms1} ${execparms2}",
+    command => "${cmd} ${execparms1} ${execparms2}",
     require => [
       Class['::cloudstack::cloudmonkey'],
       Cloudstack::Zone[$zonename]

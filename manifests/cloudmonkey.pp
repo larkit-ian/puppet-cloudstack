@@ -63,10 +63,12 @@ class cloudstack::cloudmonkey {
 
   # FIXME 2:  We shouldn't need these scripts at all.  We should
   # be making REST API calls.  But they're painful to make...
+  $add_cluster = 'cm_add_cluster.sh'
+  $create_pod = 'cm_create_pod.sh'
   file {
-    '/usr/local/bin/cm_create_pod.sh':
-      source => 'puppet:///modules/cloudstack/cm_create_pod.sh';
-    '/usr/local/bin/cm_add_cluster.sh':
-      source => 'puppet:///modules/cloudstack/cm_add_cluster.sh';
+    "/usr/local/bin/${create_pod}":
+      source => "puppet:///modules/cloudstack/${create_pod}";
+    "/usr/local/bin/${add_cluster}":
+      source => "puppet:///modules/cloudstack/${add_cluster}";
   }
 }

@@ -54,7 +54,11 @@ define cloudstack::cluster (
 
   $execparms = "\"${name}\" \"${clustertype}\" \"${hypervisor}\" \"${podname}\" \"${zonename}\""
 
+  
   include ::cloudstack
+  include ::cloudstack::cloudmonkey
+
+  $cmd = $::cloudstack::cloudmonkey::add_cluster
 
   #### NEED TO VERIFY THAT ZONEID AND PODID ARE VALID!
 #  $teststring_zone = inline_template( "<%= \"http://localhost:\" +
@@ -80,7 +84,7 @@ define cloudstack::cluster (
 #    ]
 #  }
   exec { "create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}":
-    command => "/usr/local/bin/cm_add_cluster.sh ${execparms}",
+    command => "${cmd} ${execparms}",
     require => [
       Class['::cloudstack::cloudmonkey'],
       Cloudstack::Pod[$podname]
