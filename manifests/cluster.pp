@@ -33,18 +33,20 @@ define cloudstack::cluster (
   validate_string($hypervisor)
   validate_re($hypervisor, [ 'XenServer', 'KVM', 'VMware', 'Hyperv', 'BareMetal', 'Simulator' ])
 
+  include ::cloudstack
+
   #### NEED TO VERIFY THAT ZONEID AND PODID ARE VALID!
 #  $teststring_zone = inline_template( "<%= \"http://localhost:\" +
-#                 \"${cloudstack::params::mgmt_port}/?command=listZones&\" +
+#                 \"${::cloudstack::mgmt_port}/?command=listZones&\" +
 #                 \"available=true\" %>" )
 #  $teststring_pod = inline_template( "<%= \"http://localhost:\" +
-#                 \"${cloudstack::params::mgmt_port}/?command=listPods&\" +
+#                 \"${::cloudstack::mgmt_port}/?command=listPods&\" +
 #                 \"available=true\" %>" )
 #  $teststring_cluster = inline_template( "<%= \"http://localhost:\" +
-#                 \"${cloudstack::params::mgmt_port}/?command=listClusters&\" +
+#                 \"${::cloudstack::mgmt_port}/?command=listClusters&\" +
 #                 \"available=true\" %>" )
 #  $reststring = inline_template( "<%= \"http://localhost:\" +
-#                 \"${cloudstack::params::mgmt_port}/?command=addCluster&\" +
+#                 \"${::cloudstack::mgmt_port}/?command=addCluster&\" +
 #                 \"clustername=${name}&clustertype=${clustertype}&\" +
 #                 \"hypervisor=${hypervisor}&zoneid=${zoneid}&\" +
 #                 \"podid=${podid}\" %>" )

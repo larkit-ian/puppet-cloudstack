@@ -39,9 +39,9 @@ define cloudstack::zone(
   validate_re($networktype, [ '^Basic$', '^Advanced$' ])
   validate_string($networkdomain)
 
-  include cloudstack::mgmt
+  include ::cloudstack
 
-  $mgmt_port = $cloudstack::mgmt::mgmt_port
+  $mgmt_port = $::cloudstack::mgmt_port
 
   $teststring = inline_template("http://localhost:<%= @mgmt_port %>/?command=listZones&name=<%= @name %>")
   $reststring = template('cloudstack/zone-reststring.erb')

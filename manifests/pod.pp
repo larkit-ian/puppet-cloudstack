@@ -39,18 +39,18 @@ define cloudstack::pod(
   validate_string($endip)
   validate_string($zonename)
 
-  include cloudstack::mgmt
+  include ::cloudstack
 
-  $mgmt_port = $cloudstack::mgmt::mgmt_port
+  $mgmt_port = $::cloudstack::mgmt_port
 
   #$teststring_zone = inline_template( "<%= \"http://localhost:\" +
-  #               \"${cloudstack::params::mgmt_port}/?command=listZones&\" +
+  #               \"${::cloudstack::mgmt_port}/?command=listZones&\" +
   #               \"available=true\" %>" )
   #$teststring_pod = inline_template( "<%= \"http://localhost:\" +
-  #               \"${cloudstack::params::mgmt_port}/?command=listPods&\" +
+  #               \"${::cloudstack::mgmt_port}/?command=listPods&\" +
   #               \"available=true\" %>" )
   #$reststring = inline_template( "<%= \"http://localhost:\" +
-  #               \"${cloudstack::params::mgmt_port}/?command=createPod&\" +
+  #               \"${::cloudstack::mgmt_port}/?command=createPod&\" +
   #               \"gateway=${gateway}&name=${name}&netmask=${netmask}&\" +
   #               \"startip=${startip}&endip=${endip}&zoneid=${zoneid}\" %>" )
 
