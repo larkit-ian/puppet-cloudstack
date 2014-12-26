@@ -1,9 +1,8 @@
 #
-# Class: cloudstack::clourmonkey
-# Purpose:  Install cloudmoney on the management server for configuration
+# == Class: cloudstack::cloudmonkey
+# == Purpose
+#   Install cloudmonkey on the management server for configuration
 #   operations
-#
-# FIXME: Make this an optional component...
 #
 class cloudstack::cloudmonkey {
 
