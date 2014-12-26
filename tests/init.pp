@@ -1,8 +1,7 @@
-#include cloudstack::mgmt
-class { 'cloudstack::mgmt':
+#include ::cloudstack
+class { '::cloudstack':
   csversion  => '4.4',
   setup_repo => true,
-  setup_ntp  => true,
   uses_xen   => true
 }
 
