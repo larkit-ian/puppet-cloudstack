@@ -17,13 +17,11 @@
 #
 # == Notes
 #
-#   FIXME 1:  Need to cleanup the sudoers bit
-#   FIXME 2:  SELinux disabling is a bit drastic.
-#   FIXME 3:  Need more options for cloudstack-setup-databases
-#   FIXME 4:  Hardcoded path alert - need to take into account
+#   FIXME:  Need more options for cloudstack-setup-databases
+#   FIXME:  Hardcoded path alert - need to take into account
 #     alternate locations for the sql db
-#   FIXME 5:  Test that the remote db is detected.
-#   FIXME 6:  We're currently forced into using cloudmonkey because we
+#   FIXME:  Test that the remote db is detected.
+#   FIXME:  We're currently forced into using cloudmonkey because we
 #     need it to enable the unauthenticated API port for configuring
 #     Cloudstack objects.  There's got to be a better way to do this.
 #   FIXME:  This class could use a lot of cleanup love.
@@ -41,12 +39,7 @@ class cloudstack::config {
   $localdb                   = $::cloudstack::localdb
   $enable_remote_unauth_port = $::cloudstack::enable_remote_unauth_port
 
-  # Part 1 - Items for before the installation of cloudstack-management...
-
-  # Part 2 - Cloudstack is installed.  Now what?
-  #
-
-  # FIXME 3:  Need to provide for the possibility of using the
+  # FIXME:  Need to provide for the possibility of using the
   # "-e", "-m", "-k", and "-i" options.  And securing the database connection
   # with SSL.  This may force the inline template below into a full-blown template for
   # parsing the configuration options.
@@ -58,14 +51,14 @@ class cloudstack::config {
   if $localdb == true {
     exec { 'cloudstack_setup_localdb':
       command => $dbstring,
-      creates => '/var/lib/mysql/cloud',  # FIXME 4: Hardcoded path alert!
+      creates => '/var/lib/mysql/cloud',  # FIXME: Hardcoded path alert!
       require => [ Anchor['anchor_swinstall_end'], Class['::mysql::server'], ],
       before  => Anchor['end_of_db']
     }
   } else {
     exec { 'cloudstack_setup_remotedb':
       command => $dbstring,
-      # FIXME 5:  How can we tell that the remote db is setup?
+      # FIXME:  How can we tell that the remote db is setup?
       #   What needs to be in place?
       # Answer:  A database query.  Check if the db exists...
       #   Need to verify that this works.
@@ -75,7 +68,7 @@ class cloudstack::config {
     }
   }
 
-  # Part 3 - Misc bits.
+  # Misc bits.
   anchor { 'end_of_db':
     before  => Anchor['end_of_misc']
   }
@@ -114,23 +107,28 @@ class cloudstack::config {
   }
 
   # Configure the unauthenticated management port.  Only local for now...
-  # FIXME:  Note that this resource may break the server, since it's going to try to restart it right after it comes up the first time...
+  #
 
-    # FIXME 6:  Cloudmonkey method - forces use of cloudmonkey.  Not good, but I can't use the REST API (8096) as it's a chicken/egg situation.
-    #   Can't use 8080 either as I'd need to go through the "setup an authenticated, signed connection with special parameters" dance.  Ugh.
-    #   Cloudmonkey it is.  This means that ${::cloudstack::install_cloudmonkey} is meaningless...
-    #
+  # FIXME:  We're forcing the use of Cloudmonkey here.  It's not desirable,
+  #   but I can't very well use the REST API (default 8096/tcp) to enable the
+  #   REST API port, can I?  Chicken, meet egg.  To boot, I can't use 8080/tcp
+  #   as I'd need to go through the "setup an authenticated, signed connection
+  #   with special parameters" dance.  Ugh.  So Cloudmonkey it is.  This means
+  #   that for now, ${::cloudstack::install_cloudmonkey} is meaningless...
+  #   Note that this resource may break the cloudstack-management service,
+  #   since it's going to try to restart it right after it comes up the
+  #   first time...
+  #
   include ::cloudstack::cloudmonkey
   $setport = "update configuration name=integration.api.port value=${mgmt_port}"
   exec { 'enable_mgmt_port':
-    command => "/usr/bin/cloudmonkey ${setport}",
-
-    # Not sure if this is a good idea, so disabling it for now...
-    #unless  => "/usr/bin/test `TERM=vt100 /usr/bin/cloudmonkey list configurations name=integration.api.port filter=value display=default` -eq \'${mgmt_port}\'"
+    command => "/bin/sleep 20 ; /usr/bin/cloudmonkey ${setport} ; /bin/sleep 20",
     unless  => "/usr/sbin/lsof -i :${mgmt_port}",
-
     notify  => Service['cloudstack-management'],
-    require => [ Class['::cloudstack::cloudmonkey'], Package['lsof'] ]
+    require => [
+      Class['::cloudstack::cloudmonkey'],
+      Package['lsof']
+    ]
   }
 
   # Firewall rules
