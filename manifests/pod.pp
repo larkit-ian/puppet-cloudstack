@@ -49,7 +49,9 @@ define cloudstack::pod(
   validate_string($endip)
   validate_string($gateway)
 
+  # Things we need from the outside
   $mgmt_port = $::cloudstack::mgmt_port
+
   $execparms1 = "\"${name}\" \"${zonename}\""
   $execparms2 = "\"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\""
 
@@ -70,8 +72,9 @@ define cloudstack::pod(
   #
   exec { "create_pod_${name}_in_zone_${zonename}":
     command => "/usr/local/bin/cm_createpod.sh ${execparms1} ${execparms2}",
-    require => [ Class['::cloudstack::cloudmonkey'],
-                 Cloudstack::Zone[$zonename]
-               ]
+    require => [
+      Class['::cloudstack::cloudmonkey'],
+      Cloudstack::Zone[$zonename]
+    ]
   }
 }

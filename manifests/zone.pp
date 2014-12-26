@@ -65,7 +65,9 @@ define cloudstack::zone(
   validate_re($networktype, [ '^Basic$', '^Advanced$' ])
   validate_string($networkdomain)
 
+  # Things we need from the outside
   $mgmt_port = $::cloudstack::mgmt_port
+
   $packages_we_need = 'curl'
 
   $teststring = inline_template("http://localhost:<%= @mgmt_port %>/?command=listZones&name=<%= @name %>")
@@ -77,6 +79,10 @@ define cloudstack::zone(
   exec { "check_zone_exists_${name}":
     command => "/usr/bin/curl ${reststring}",
     unless  => "/usr/bin/curl -s \"${teststring}\" | /bin/grep -q ${name} 2>/dev/null",
-    require => [ Service['cloudstack-management'], Package['curl'] ]
+    require => [
+      Service['cloudstack-management'],
+      Package['curl'],
+      Exec['enable_mgmt_port']
+    ]
   }
 }

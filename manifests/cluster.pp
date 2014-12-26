@@ -49,7 +49,9 @@ define cloudstack::cluster (
   validate_string($clustertype)
   validate_re($clustertype, [ 'CloudManaged', 'ExternalManaged' ])
 
+  # Things we need from the outside
   $mgmt_port = $::cloudstack::mgmt_port
+
   $execparms = "\"${name}\" \"${clustertype}\" \"${hypervisor}\" \"${podname}\" \"${zonename}\""
 
   include ::cloudstack

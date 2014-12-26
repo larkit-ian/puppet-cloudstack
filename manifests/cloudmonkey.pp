@@ -19,7 +19,8 @@
 #
 # == Notes
 #
-#   FIXME:  We don't want to use the support scripts for too long.
+#   FIXME 1:  We need SELinux labels.
+#   FIXME 2:  We don't want to use the support scripts for too long.
 #     Ultimately, we should go back to using the REST API.
 #
 class cloudstack::cloudmonkey {
@@ -53,10 +54,12 @@ class cloudstack::cloudmonkey {
     mode   => '0700',
     owner  => 'root',
     group  => 'root',
-    # FIXME:  SELinux labels needed here.
+    # FIXME 1:  SELinux labels needed here.
     require => Exec['install_cloudmonkey']
   }
 
+  # FIXME 2:  We shouldn't need these scripts at all.  We should
+  # be making REST API calls.  But they're painful to make...
   file {
     '/usr/local/bin/cm_create_pod.sh':
       source => 'puppet:///modules/cloudstack/cm_create_pod.sh';

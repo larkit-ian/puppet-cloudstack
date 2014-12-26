@@ -11,7 +11,6 @@
 #   $setup_repo (boolean): Do we want this module to setup the yum repo?
 #
 #   $mgmt_port (string): Default port for unauthenticated management.
-#     FIXME - We need to use this to configure the service.
 #
 #   $localdb (boolean): Will the mysql database be located on this host?
 #
@@ -31,6 +30,10 @@
 #   $dbrootpw (string): Password for the administrative db user.
 #
 #   $install_cloudmonkey (boolean): If true, install Cloudmonkey.
+#
+#   $enable_remote_unauth_port (boolean): If true, allows remote connections to
+#     the unauthenticated API port ($mgmt_port).  Defaults to false.
+#     DO NOT ENABLE UNLESS YOU ARE ABSOLUTELY SURE ABOUT THIS!
 #
 # == Requires
 #
@@ -59,17 +62,18 @@
 #
 #
 class cloudstack (
-  $csversion           = '4.2',
-  $setup_repo          = true,
-  $mgmt_port           = '8096',
-  $localdb             = true,
-  $uses_xen            = false,
-  $dbuser              = 'cloud',
-  $dbpassword          = 'cloud',  # FIXME - this should be either mandatory or generated later.
-  $dbhost              = undef,
-  $dbdeployasuser      = 'root',
-  $dbrootpw            = 'rootpw',
-  $install_cloudmonkey = false
+  $csversion                 = '4.2',
+  $setup_repo                = true,
+  $mgmt_port                 = '8096',
+  $localdb                   = true,
+  $uses_xen                  = false,
+  $dbuser                    = 'cloud',
+  $dbpassword                = 'cloud',  # FIXME - this should be either mandatory or generated later.
+  $dbhost                    = undef,
+  $dbdeployasuser            = 'root',
+  $dbrootpw                  = 'rootpw',
+  $install_cloudmonkey       = true,
+  $enable_remote_unauth_port = false
 ) {
   validate_string($csversion, '4.[2345]')
   validate_bool($setup_repo)
@@ -82,6 +86,7 @@ class cloudstack (
   validate_string($dbdeployasuser)
   validate_string($dbrootpw)
   validate_bool($install_cloudmonkey)
+  validate_bool($enable_remote_unauth_port)
 
   # FIXME - referencing the value of $dbpassword, ideally we should set
   # the default value to '', then if we find that it wasn't specified as a

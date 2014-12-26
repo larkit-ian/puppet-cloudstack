@@ -16,21 +16,41 @@
 #
 # == Requires
 #
+#   lsof
+#
 # == Sample Usage
 #
 # == Notes
 #
-#   FIXME:  Need to open up the unauthenticated API port JUST for localhost and
-#     firewall it from everything else.  But we need it to setup cs objects.
+#   FIXME 1:  Need to cleanup the sudoers bit
+#   FIXME 2:  SELinux disabling is a bit drastic.
+#   FIXME 3:  Need more options for cloudstack-setup-databases
+#   FIXME 4:  Hardcoded path alert - need to take into account
+#     alternate locations for the sql db
+#   FIXME 5:  Test that the remote db is detected.
+#   FIXME 6:  We're currently forced into using cloudmonkey because we
+#     need it to enable the unauthenticated API port for configuring
+#     Cloudstack objects.  There's got to be a better way to do this.
 #   FIXME:  This class could use a lot of cleanup love.
 #
 class cloudstack::config {
+
+  # Things we need from the outside...
+  $dbuser                    = $::cloudstack::dbuser
+  $dbpassword                = $::cloudstack::dbpassword
+  $dbhost                    = $::cloudstack::dbhost
+  $dbdeployasuser            = $::cloudstack::dbdeployasuser
+  $dbrootpw                  = $::cloudstack::dbrootpw
+  $mgmt_port                 = $::cloudstack::mgmt_port
+  $enable_aws_api            = $::cloudstack::enable_aws_api
+  $localdb                   = $::cloudstack::localdb
+  $enable_remote_unauth_port = $::cloudstack::enable_remote_unauth_port
 
   # Part 1 - Items for before the installation of cloudstack-management...
 
   #   Part 1.1 - Sudo configuration.
   #
-  #   FIXME - could this be a stanza in /etc/sudoers.d?  Depends on the OS.
+  #   FIXME 1: Could this be a stanza in /etc/sudoers.d?  Depends on the OS.
   #     Answer: make this more OS-sensitive.  Maybe use the sudo module?
 
   file_line { 'cs_sudo_rule':
@@ -60,7 +80,7 @@ class cloudstack::config {
   #   Part 1.3 - Disable SELinux.  I don't like doing this, but Cloudstack
   #     says to do it, so for now...
   #
-  #   	FIXME:  No need to replace the config file when disabling SELinux...
+  #   	FIXME 2:  No need to replace the config file when disabling SELinux...
 
   exec { 'disable_selinux':
     command => '/usr/sbin/setenforce 0',
@@ -79,28 +99,30 @@ class cloudstack::config {
     before  => Anchor['anchor_dbsetup_end']
   }
 
-  # FIXME:  Need to provide for the possibility of using the
+  # FIXME 3:  Need to provide for the possibility of using the
   # "-e", "-m", "-k", and "-i" options.  And securing the database connection
-  # with SSL.
+  # with SSL.  This may force the inline template below into a full-blown template for
+  # parsing the configuration options.
+  #
   $dbstring = inline_template( "<%= \"/usr/bin/cloudstack-setup-databases \" +
-              \"${::cloudstack::dbuser}:${::cloudstack::dbpassword}@${::cloudstack::dbhost} --deploy-as=${::cloudstack::dbdeployasuser}:${::cloudstack::dbrootpw}\" %>" )
+              \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
 
   #      Continue on by initializing the database.
-  if $::cloudstack::localdb == true {
+  if $localdb == true {
     exec { 'cloudstack_setup_localdb':
       command => $dbstring,
-      creates => '/var/lib/mysql/cloud',
+      creates => '/var/lib/mysql/cloud',  # FIXME 4: Hardcoded path alert!
       require => [ Anchor['anchor_dbsetup_begin'], Class['::mysql::server'], ],
       before  => Anchor['anchor_dbsetup_end']
     }
   } else {
     exec { 'cloudstack_setup_remotedb':
       command => $dbstring,
-      # FIXME:  How can we tell that the remote db is setup?
+      # FIXME 5:  How can we tell that the remote db is setup?
       #   What needs to be in place?
       # Answer:  A database query.  Check if the db exists...
       #   Need to verify that this works.
-      unless  => "/usr/bin/mysql -u${::cloudstack::dbuser} -p${::cloudstack::dbpassword} -h ${::cloudstack::dbhost} cloud",
+      unless  => "/usr/bin/mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud",
       require => Anchor['::cloudstack::install::anchor_swinstall_end'],
       before  => Anchor['anchor_dbsetup_end']
     }
@@ -118,7 +140,10 @@ class cloudstack::config {
 
   # Note that this step is only here because of the order of the
   # installation instructions...
-  # FIXME:  Only if using KVM...
+  #
+  # (Also note that we cannot know if there will ever be a KVM zone,
+  # and since the creation of zones is done via a "define",
+  # and since we only want to do this once, everyone gets it...)
   file_line { 'cs_cloud_norequiretty':
     path   => '/etc/sudoers',
     line   => 'Defaults:cloud !requiretty',
@@ -158,51 +183,119 @@ class cloudstack::config {
     require => Anchor['anchor_misc_begin']
   }
 
+  # Configure the unauthenticated management port.  Only local for now...
+  # FIXME:  Note that this resource may break the server, since it's going to try to restart it right after it comes up the first time...
+
+    # FIXME 6:  Cloudmonkey method - forces use of cloudmonkey.  Not good, but I can't use the REST API (8096) as it's a chicken/egg situation.
+    #   Can't use 8080 either as I'd need to go through the "setup an authenticated, signed connection with special parameters" dance.  Ugh.
+    #   Cloudmonkey it is.  This means that ${::cloudstack::install_cloudmonkey} is meaningless...
+    #
+  include ::cloudstack::cloudmonkey
+  $setport = "update configuration name=integration.api.port value=${mgmt_port}",
+  exec { 'enable_mgmt_port':
+    command => "TERM=vt100 /usr/bin/cloudmonkey ${setport}",
+
+    # Not sure if this is a good idea, so disabling it for now...
+    #unless  => "/usr/bin/test `TERM=vt100 /usr/bin/cloudmonkey list configurations name=integration.api.port filter=value display=default` -eq \'${mgmt_port}\'"
+    unless  => "/usr/sbin/lsof -i :${mgmt_port}",
+
+    notify  => Service['cloudstack-management'],
+    require => Class['::cloudstack::cloudmonkey']
+  }
 
   # FIXME:  Deal with firewall ports
   # Firewall rules
 
-  firewall { '001 allow icmp':
+  firewall { '001 INPUT allow icmp':
+    chain  => 'INPUT',
     proto  => 'icmp',
     action => 'accept',
   }
-  firewall { '002 allow all to lo interface':
+  firewall { '002 INPUT allow all to lo interface':
+    chain   => 'INPUT',
     iniface => 'lo',
     action  => 'accept',
   }
-  firewall { '003 allow ssh':
-    dport => '22',
-    proto => 'tcp',
-  }
-  firewall { '003 allow port 80 in':
+  firewall { '003 INPUT allow ssh':
+    chain  => 'INPUT',
+    dport  => '22',
     proto  => 'tcp',
-    dport  => '80',
     action => 'accept',
   }
-  firewall { '120 permit 8080 - web interface':
+  firewall { '003 INPUT allow port 80':
+    chain  => 'INPUT',
+    dport  => '80',
     proto  => 'tcp',
-    dport  => '8080',
     action => 'accept',
   }
 
-  # FIXME:  Deal with this somehow...
-  ###### this is the unauthed API interface - should be locked down by default.
-  # firewall { '130 permit unauthed API':
-  #   proto => 'tcp',
-  #   dport => '8096',
-  #   jump  => 'accept',
-  # }
+  #
+  # Remote database?  No problem.  But if you're doing egress firewalling,
+  # you'd better also capture NFS, DNS, and iSCSI.
+  #
+  #if $localdb == false {
+  #  firewall { '100 OUTPUT allow port 3306 out':
+  #    chain  => 'OUTPUT',
+  #    dport  => '3306',  # FIXME: Hardcoded port alert
+  #    proto  => 'tcp',
+  #    action => 'accept',
+  #  }
+  #}
+  #
+  # FIXME:  What if we want the AWS API server?  We'll need code for that
+  # and a firewall rule.  Here's one..
+  # 
+  # if $enable_aws_api {
+  #   firewall { '100 INPUT allow 7080 for AWS API':
+  #     chain  => 'INPUT',
+  #     dport  => '7080',  # FIXME: Hardcoded port alert
+  #     proto  => 'tcp',
+  #     action => 'accept',
+  #   }
   #
 
-  firewall { '8250 CPVM':    #### Think this is for cpvm, but check for certain.
+  # Cloudstack-specific ports.  See
+  #   https://cwiki.apache.org/confluence/display/CLOUDSTACK/Ports+used+by+CloudStack
+
+  firewall { '120 permit 8080 - web interface':
+    chain  => 'INPUT',
+    dport  => '8080',  # FIXME: Hardcoded port alert
     proto  => 'tcp',
-    dport  => '8250',
     action => 'accept',
   }
 
-  firewall { '9090 unk port':    ######## find out what this does in cloudstack
+  #   Unauthenticated API interface.  We don't want to open this by default.
+  if $enable_remote_unauth_port {
+    notify { 'ALERT:  Opening the unauthenticated port is DANGEROUS!  Please be certain.': } ->
+    firewall { '130 permit unauthenticated API':
+      chain  => 'INPUT',
+      dport  => $mgmt_port,
+      proto  => 'tcp',
+      action => 'accept',
+    }
+  }
+  
+  #   I did not come up with this name.  I swear.  Go look at the web page.
+  firewall { '130 permit 3922 Secure System secure communication port':
+    chain  => 'INPUT',
+    dport  => '3922',
     proto  => 'tcp',
+    action => 'accept',
+  }
+
+  #   System VM to management unsecured communication port (
+  firewall { '8250 CPVM':
+    chain  => 'INPUT',
+    dport  => '8250',
+    proto  => 'tcp',
+    action => 'accept',
+  }
+
+  # Cloudstack management cluster port
+  firewall { '120 permit 9090 cloudstack cluster management port':
+    chain  => 'INPUT',
     dport  => '9090',
+    proto  => 'tcp',
     action => 'accept',
   }
 

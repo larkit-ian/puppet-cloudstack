@@ -23,12 +23,21 @@
 #
 class cloudstack::install {
 
+  # Things we need from the outside...
+  $setup_repo = $::cloudstack::setup_repo
+  $csversion = $::cloudstack::csversion
+  $uses_xen = $::cloudstack::uses_xen
+  $localdb = $::cloudstack::localdb
+  $dbhost = $::cloudstack::dbhost
+  $dbrootpw = $::cloudstack::dbrootpw
+  $install_cloudmonkey = $::cloudstack::install_cloudmonkey
+
   # Setup the repo.
-  if $::cloudstack::setup_repo == true and $::osfamily == 'RedHat' {
+  if $setup_repo == true and $::osfamily == 'RedHat' {
     yumrepo{ 'cloudstack':
       ensure   => present,
-      descr    => "Cloudstack ${::cloudstack::csversion} repository",
-      baseurl  => "http://cloudstack.apt-get.eu/rhel/${::cloudstack::csversion}/",
+      descr    => "Cloudstack ${csversion} repository",
+      baseurl  => "http://cloudstack.apt-get.eu/rhel/${csversion}/",
       enabled  => '1',
       gpgcheck => '0',
       before   => Package['cloudstack-management']
@@ -36,7 +45,7 @@ class cloudstack::install {
   }
 
   # Fix for known bug in 4.3 release...
-  if $::operatingsystem == 'Ubuntu' and $::cloudstack::csversion == '4.3' {
+  if $::operatingsystem == 'Ubuntu' and $csversion == '4.3' {
     package { 'libmysql-java':
       ensure => installed,
       before => Package['cloudstack-management']
@@ -51,7 +60,7 @@ class cloudstack::install {
   package { 'wget': ensure => present } # Not needed after 2.2.9, see bug 11258
 
   # We may need vhd-util...
-  if $::cloudstack::uses_xen == true {
+  if $uses_xen == true {
     $vhd_url  = 'http://download.cloud.com.s3.amazonaws.com/tools/vhd-util'
     $vhd_path = '/usr/share/cloudstack-common/scripts/vm/hypervisor/xenserver'
     $vhd_download_command = "/usr/bin/wget ${vhd_url} -O ${vhd_path}/vhd_util"
@@ -76,12 +85,12 @@ class cloudstack::install {
   # And now we come to the end of software installation.
   anchor { 'anchor_swinstall_end': }
 
-  $remotedbhost = $::cloudstack::localdb ? {
+  $remotedbhost = $localdb ? {
     true  => 'localhost',
-    false => $::cloudstack::dbhost
+    false => $dbhost
   }
 
-  if $::cloudstack::localdb == true {
+  if $localdb == true {
     $override_options = {
       'mysqld' => {
         'innodb_rollback_on_timeout' => '1',
@@ -90,7 +99,7 @@ class cloudstack::install {
       }
     }
     class { '::mysql::server':
-      root_password           => $::cloudstack::dbrootpw,
+      root_password           => $dbrootpw,
       override_options        => $override_options,
       remove_default_accounts => true,
       service_enabled         => true,
@@ -99,7 +108,7 @@ class cloudstack::install {
   }
 
   # If we want cloudmonkey...
-  if $::cloudstack::install_cloudmonkey {
+  if $install_cloudmonkey {
     include cloudstack::cloudmonkey
   }
 }
