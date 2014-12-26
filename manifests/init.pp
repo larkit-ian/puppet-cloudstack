@@ -95,7 +95,7 @@ class cloudstack (
   anchor { '::cloudstack::begin': before => Anchor['::cloudstack::end'] }
   class { '::cloudstack::install': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
   class { '::cloudstack::config': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
-  class { '::cloudstack::service': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
+  #class { '::cloudstack::service': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
   anchor { '::cloudstack::end': require => Anchor['::cloudstack::begin'] }
 
 }

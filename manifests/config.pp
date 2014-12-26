@@ -39,6 +39,8 @@ class cloudstack::config {
   $localdb                   = $::cloudstack::localdb
   $enable_remote_unauth_port = $::cloudstack::enable_remote_unauth_port
 
+  $setport = "update configuration name=integration.api.port value=${mgmt_port}"
+
   # FIXME:  Need to provide for the possibility of using the
   # "-e", "-m", "-k", and "-i" options.  And securing the database connection
   # with SSL.  This may force the inline template below into a full-blown template for
@@ -103,8 +105,22 @@ class cloudstack::config {
   }
 
   anchor { 'end_of_misc':
-    require => Anchor['end_of_db']
+    require => Anchor['end_of_db'],
+    before  => Anchor['service_hook']
   }
+
+  service { 'cloudstack-management':
+    ensure    => running,
+    enable    => true,
+    hasstatus => true,
+    require   => Anchor['end_of_misc'],
+    before    => Anchor['service_hook']
+  }
+
+  anchor { 'service_hook':
+    require => Anchor['end_of_misc'],
+  }
+
 
   # Configure the unauthenticated management port.  Only local for now...
   #
@@ -120,12 +136,12 @@ class cloudstack::config {
   #   first time...
   #
   include ::cloudstack::cloudmonkey
-  $setport = "update configuration name=integration.api.port value=${mgmt_port}"
+
   exec { 'enable_mgmt_port':
-    command => "/bin/sleep 20 ; /usr/bin/cloudmonkey ${setport} ; /bin/sleep 20",
+    command => "/bin/sleep 20 ; /usr/bin/cloudmonkey ${setport} ; /sbin/service cloudstack-management restart ; /bin/sleep 20",
     unless  => "/usr/sbin/lsof -i :${mgmt_port}",
-    notify  => Service['cloudstack-management'],
     require => [
+      Anchor['service_hook'],
       Class['::cloudstack::cloudmonkey'],
       Package['lsof']
     ]
