@@ -191,9 +191,9 @@ class cloudstack::config {
     #   Cloudmonkey it is.  This means that ${::cloudstack::install_cloudmonkey} is meaningless...
     #
   include ::cloudstack::cloudmonkey
-  $setport = "update configuration name=integration.api.port value=${mgmt_port}",
+  $setport = "update configuration name=integration.api.port value=${mgmt_port}"
   exec { 'enable_mgmt_port':
-    command => "TERM=vt100 /usr/bin/cloudmonkey ${setport}",
+    command => "/usr/bin/cloudmonkey ${setport}",
 
     # Not sure if this is a good idea, so disabling it for now...
     #unless  => "/usr/bin/test `TERM=vt100 /usr/bin/cloudmonkey list configurations name=integration.api.port filter=value display=default` -eq \'${mgmt_port}\'"

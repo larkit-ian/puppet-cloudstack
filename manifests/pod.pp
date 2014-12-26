@@ -36,7 +36,7 @@
 #   FIXME:  Make this use the API again rather than cloudmonkey
 #
 define cloudstack::pod(
-  $zonename
+  $zonename,
   $startip,
   $netmask,
   $endip,
