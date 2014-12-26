@@ -92,9 +92,10 @@ class cloudstack (
   # the default value to '', then if we find that it wasn't specified as a
   # parameter, we should randomly generate a password.
 
-  anchor { '::cloudstack::begin': } ->
-  class { '::cloudstack::install': } ->
-  class { '::cloudstack::config': } ->
-  anchor { '::cloudstack::end': }
+  anchor { '::cloudstack::begin': before => Anchor['::cloudstack::end'] }
+  class { '::cloudstack::install': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
+  class { '::cloudstack::config': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
+  class { '::cloudstack::service': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
+  anchor { '::cloudstack::end': require => Anchor['::cloudstack::begin'] }
 
 }
