@@ -25,10 +25,13 @@
 #
 class cloudstack::cloudmonkey {
 
-  $needed_packages = [ 'readline', 'python-setuptools' ]
+  $needed_packages = [ 'readline', 'python-setuptools', 'python-pip' ]
 
   # Prerequisites...
   if $::osfamily == 'RedHat' {
+    package { 'python-boto':
+      ensure => absent,
+    } ->
     package { 'python-requests':
       ensure => absent,
       before => Exec['install_cloudmonkey']
