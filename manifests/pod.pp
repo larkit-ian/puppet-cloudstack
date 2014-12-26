@@ -71,7 +71,7 @@ define cloudstack::pod(
   # Is the zone there?
   #
   exec { "create_pod_${name}_in_zone_${zonename}":
-    command => "/usr/local/bin/cm_createpod.sh ${execparms1} ${execparms2}",
+    command => "/usr/local/bin/cm_create_pod.sh ${execparms1} ${execparms2}",
     require => [
       Class['::cloudstack::cloudmonkey'],
       Cloudstack::Zone[$zonename]
