@@ -10,8 +10,10 @@
 #   Install cloudstack-management package (and dependencies, including repo
 #     setup for $::osfamily == 'RedHat' and additional stuff for Ubuntu)
 #   Install the cloudstack-management package
-#   Download and install vhd_util if we’re using Xen ($::cloudstack::uses_xen = true)
-#   Install cloud database only if MySQL is installed and configured ($::cloudstack::localdb = true)
+#   Download and install vhd_util if we’re using Xen
+#     ($::cloudstack::uses_xen = true)
+#   Install cloud database only if MySQL is installed and configured
+#     ($::cloudstack::localdb = true)
 #   Install cloudmonkey
 #
 # == Requires
@@ -32,16 +34,10 @@ class cloudstack::install {
   $dbrootpw = $::cloudstack::dbrootpw
   $install_cloudmonkey = $::cloudstack::install_cloudmonkey
 
-  # Setup the repo.
-  if $setup_repo == true and $::osfamily == 'RedHat' {
-    yumrepo{ 'cloudstack':
-      ensure   => present,
-      descr    => "Cloudstack ${csversion} repository",
-      baseurl  => "http://cloudstack.apt-get.eu/rhel/${csversion}/",
-      enabled  => '1',
-      gpgcheck => '0',
-      before   => Package['cloudstack-management']
-    }
+  class { '::cloudstack::common':
+    csversion  => $csversion,
+    setup_repo => $setup_repo,
+    before     => Package['cloudstack-management']
   }
 
   # Fix for known bug in 4.3 release...
@@ -52,12 +48,25 @@ class cloudstack::install {
     }
   }
 
-  package { 'cloudstack-management':
-    ensure => installed,
-    before => Anchor['anchor_swinstall_end']
+  # FIXME:  I can do better than this...
+  if $::osfamily == 'RedHat' {
+    package { 'cloudstack-management':
+      ensure  => installed,
+      before  => Anchor['anchor_swinstall_end'],
+      require => Yumrepo['cloudstack']
+    }
+  } else {
+    package { 'cloudstack-management':
+      ensure => installed,
+      before => Anchor['anchor_swinstall_end'],
+    }
   }
 
+  # FIXME: I can do these better...
   package { 'wget': ensure => present } # Not needed after 2.2.9, see bug 11258
+  package { 'curl': ensure => present } # For the REST interface.
+  package { 'lsof': ensure => present } # For checking if the unauth port
+                                        #   is listening
 
   # We may need vhd-util...
   if $uses_xen == true {

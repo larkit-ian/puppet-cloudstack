@@ -5,10 +5,13 @@
 # are running.
 #
 class cloudstack::service {
+
+  include ::cloudstack
+
   service { 'cloudstack-management':
     ensure    => running,
     enable    => true,
     hasstatus => true,
-    require   => Anchor['anchor_misc_end']
+    require   => Anchor['end_of_misc']
   }
 }

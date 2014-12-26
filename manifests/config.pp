@@ -7,16 +7,11 @@
 #
 # == Actions
 #
-#      Manage hosts file
-#      Manage sudoers entry or cloud user
-#      Disable SELinux (unfortunately)
 #      Configure the database for CS usage 
 #      Configure Tomcat
 #      Configure some basic Firewall rules
 #
 # == Requires
-#
-#   lsof
 #
 # == Sample Usage
 #
@@ -48,56 +43,8 @@ class cloudstack::config {
 
   # Part 1 - Items for before the installation of cloudstack-management...
 
-  #   Part 1.1 - Sudo configuration.
-  #
-  #   FIXME 1: Could this be a stanza in /etc/sudoers.d?  Depends on the OS.
-  #     Answer: make this more OS-sensitive.  Maybe use the sudo module?
-
-  file_line { 'cs_sudo_rule':
-    path   => '/etc/sudoers',
-    line   => 'cloud ALL = NOPASSWD : ALL',
-    before => Package['cloudstack-management']
-  }
-
-  #   Part 1.2 - Fixup for /etc/hosts.
-  #     Part 1.2.1 - Clear out entries from /etc/hosts...
-  #       (this might be a little dangerous...)
-
-  resources { 'host':
-    name  => 'host',
-    purge => true
-  }
-
-  #     Part 1.2.2 - Ensure the localhost entry.
-
-  host { 'localhost':
-    ensure       => present,
-    ip           => '127.0.0.1',
-    host_aliases => [ $::fqdn, 'localhost.localdomain', $::hostname ],
-    before       => Package['cloudstack-management']
-  }
-
-  #   Part 1.3 - Disable SELinux.  I don't like doing this, but Cloudstack
-  #     says to do it, so for now...
-  #
-  #   	FIXME 2:  No need to replace the config file when disabling SELinux...
-
-  exec { 'disable_selinux':
-    command => '/usr/sbin/setenforce 0',
-    onlyif  => '/usr/sbin/getenforce | grep Enforcing',
-  } ->
-  file { '/etc/selinux/config':
-    source => 'puppet:///modules/cloudstack/config',
-    before => Package['cloudstack-management']
-  }
-
   # Part 2 - Cloudstack is installed.  Now what?
   #
-  #   Part 2.1 - Configure the database.  Start with an anchor.
-
-  anchor { 'anchor_dbsetup_begin':
-    before  => Anchor['anchor_dbsetup_end']
-  }
 
   # FIXME 3:  Need to provide for the possibility of using the
   # "-e", "-m", "-k", and "-i" options.  And securing the database connection
@@ -112,8 +59,8 @@ class cloudstack::config {
     exec { 'cloudstack_setup_localdb':
       command => $dbstring,
       creates => '/var/lib/mysql/cloud',  # FIXME 4: Hardcoded path alert!
-      require => [ Anchor['anchor_dbsetup_begin'], Class['::mysql::server'], ],
-      before  => Anchor['anchor_dbsetup_end']
+      require => [ Anchor['anchor_swinstall_end'], Class['::mysql::server'], ],
+      before  => Anchor['end_of_db']
     }
   } else {
     exec { 'cloudstack_setup_remotedb':
@@ -123,38 +70,21 @@ class cloudstack::config {
       # Answer:  A database query.  Check if the db exists...
       #   Need to verify that this works.
       unless  => "/usr/bin/mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud",
-      require => Anchor['::cloudstack::install::anchor_swinstall_end'],
-      before  => Anchor['anchor_dbsetup_end']
+      require => Anchor['anchor_swinstall_end'],
+      before  => Anchor['end_of_db']
     }
-  }
-  anchor { 'anchor_dbsetup_end':
-    require => Anchor['anchor_dbsetup_begin'],
-    before  => Anchor['anchor_misc_begin']
   }
 
   # Part 3 - Misc bits.
-  anchor { 'anchor_misc_begin':
-    require => Anchor['anchor_dbsetup_end'],
-    before  => Anchor['anchor_misc_end']
+  anchor { 'end_of_db':
+    before  => Anchor['end_of_misc']
   }
 
-  # Note that this step is only here because of the order of the
-  # installation instructions...
-  #
-  # (Also note that we cannot know if there will ever be a KVM zone,
-  # and since the creation of zones is done via a "define",
-  # and since we only want to do this once, everyone gets it...)
-  file_line { 'cs_cloud_norequiretty':
-    path   => '/etc/sudoers',
-    line   => 'Defaults:cloud !requiretty',
-    before => Exec['cs_setup_mgmt']
-  }
-    
   exec { 'cs_setup_mgmt':
     command => '/usr/bin/cloudstack-setup-management',
     unless  => '/usr/bin/test -e /etc/sysconfig/cloudstack-management',
-    require => Anchor['anchor_misc_begin'],
-    before  => Anchor['anchor_misc_end']
+    require => Anchor['end_of_db'],
+    before  => Anchor['end_of_misc']
   }
 
   # Tomcat config files
@@ -166,7 +96,7 @@ class cloudstack::config {
     owner   => '0',
     target  => 'tomcat6-nonssl.conf',
     require => Exec['cs_setup_mgmt'],
-    before  => Anchor['anchor_misc_end']
+    before  => Anchor['end_of_misc']
   }
 
   file { '/usr/share/cloudstack-management/conf/server.xml':
@@ -176,11 +106,11 @@ class cloudstack::config {
     owner   => '0',
     target  => 'server-nonssl.xml',
     require => Exec['cs_setup_mgmt'],
-    before  => Anchor['anchor_misc_end']
+    before  => Anchor['end_of_misc']
   }
 
-  anchor { 'anchor_misc_end':
-    require => Anchor['anchor_misc_begin']
+  anchor { 'end_of_misc':
+    require => Anchor['end_of_db']
   }
 
   # Configure the unauthenticated management port.  Only local for now...
@@ -200,28 +130,11 @@ class cloudstack::config {
     unless  => "/usr/sbin/lsof -i :${mgmt_port}",
 
     notify  => Service['cloudstack-management'],
-    require => Class['::cloudstack::cloudmonkey']
+    require => [ Class['::cloudstack::cloudmonkey'], Package['lsof'] ]
   }
 
-  # FIXME:  Deal with firewall ports
   # Firewall rules
 
-  firewall { '001 INPUT allow icmp':
-    chain  => 'INPUT',
-    proto  => 'icmp',
-    action => 'accept',
-  }
-  firewall { '002 INPUT allow all to lo interface':
-    chain   => 'INPUT',
-    iniface => 'lo',
-    action  => 'accept',
-  }
-  firewall { '003 INPUT allow ssh':
-    chain  => 'INPUT',
-    dport  => '22',
-    proto  => 'tcp',
-    action => 'accept',
-  }
   firewall { '003 INPUT allow port 80':
     chain  => 'INPUT',
     dport  => '80',

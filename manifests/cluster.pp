@@ -77,8 +77,7 @@ define cloudstack::cluster (
 #      "/usr/bin/curl \'${teststring_zone}\' | grep ${zoneid}",
 #      "/usr/bin/curl \'${teststring_pod}\' | grep ${podid}",
 #      "/usr/bin/curl \'${teststring_cluster}\' | grep -v ${cluster}"
-#    ],
-#    require => Anchor['anchor_dbsetup_end']
+#    ]
 #  }
   exec { "create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}":
     command => "/usr/local/bin/cm_add_cluster.sh ${execparms}",

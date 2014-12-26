@@ -1,32 +1,64 @@
-# Class: cloudstack::kvmagent
 #
-# This class installs the base CloudStack KVM agent
+# == Class: cloudstack::kvmagent
 #
-# Parameters:
+#   This class installs the base CloudStack KVM agent
 #
-# Actions:
-# Install base cloudstack agent
-# Install Package['cloud-agent']
-# Run script Exec['cloud-setup-agent']
+# == Parameters
 #
-# Requires:
+# == Actions
 #
-# Sample Usage:
+#   Install base cloudstack agent
+#   Install Package['cloud-agent']
+#   Run script Exec['cloud-setup-agent']
+#
+# == Requires
+#
+# == Sample Usage
 #
 class cloudstack::kvmagent (
   $csversion = '4.2',
   $setup_repo = true,
 ) {
-  class { 'cloudstack':
+
+  class { '::cloudstack::common':
     csversion  => $csversion,
     setup_repo => $setup_repo,
     before     => Package['cloudstack-agent']
   }
 
-  package { 'cloudstack-agent':
+  package { [ 'cloudstack-agent', 'wget' ]:
     ensure  => present,
   }
 
+########## We're okay up until this point...
+
+  # FIXME: Need to configure libvirt... the following lines are needed in
+  #   /etc/libvirt/libvirtd.conf (and must notify
+  #   Service[$libvirt_service_name]:
+  #     listen_tls = 0
+  #     listen_tcp = 1
+  #     tcp_port = "16059"
+  #     auth_tcp = "none"
+  #     mdns_adv = 0
+  #
+  #   ($::osfamily == 'RedHat') in /etc/sysconfig/libvirtd (notify after):
+  #     LIBVIRTD_ARGS="--listen"
+  #
+  #   ($::operatingsystem == 'Ubuntu')
+  #   	in /etc/default/libvirt-bin (notify after):
+  #       libvirtd_opts="-d -l"
+  #     in /etc/libvirt/qemu.conf (notify after):
+  #       vnc_listen = 0.0.0.0
+  #
+
+  # Technically, this may be unnecessary...
+  $libvirt_service_name = $::cloudstack::params::libvirt_service_name
+
+  service { $libvirt_service_name:
+    ensure    => running,
+    hasstatus => true,
+  }
+  
   package { 'NetworkManager':
     ensure => absent;
   }

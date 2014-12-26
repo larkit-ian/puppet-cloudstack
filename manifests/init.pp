@@ -62,19 +62,19 @@
 #
 #
 class cloudstack (
-  $csversion                 = '4.2',
-  $setup_repo                = true,
-  $mgmt_port                 = '8096',
-  $localdb                   = true,
-  $uses_xen                  = false,
-  $dbuser                    = 'cloud',
-  $dbpassword                = 'cloud',  # FIXME - this should be either mandatory or generated later.
-  $dbhost                    = undef,
-  $dbdeployasuser            = 'root',
-  $dbrootpw                  = 'rootpw',
-  $install_cloudmonkey       = true,
-  $enable_remote_unauth_port = false
-) {
+  $csversion                 = $::cloudstack::params::csversion,
+  $setup_repo                = $::cloudstack::params::setup_repo,
+  $mgmt_port                 = $::cloudstack::params::mgmt_port,
+  $localdb                   = $::cloudstack::params::localdb,
+  $uses_xen                  = $::cloudstack::params::uses_xen,
+  $dbuser                    = $::cloudstack::params::dbuser,
+  $dbpassword                = $::cloudstack::params::dbpassword,
+  $dbhost                    = $::cloudstack::params::dbhost,
+  $dbdeployasuser            = $::cloudstack::params::dbdeployasuser,
+  $dbrootpw                  = $::cloudstack::params::dbrootpw,
+  $install_cloudmonkey       = $::cloudstack::params::install_cloudmonkey,
+  $enable_remote_unauth_port = $::cloudstack::params::enable_remote_unauth_port
+) inherits cloudstack::params {
   validate_string($csversion, '4.[2345]')
   validate_bool($setup_repo)
   validate_string($mgmt_port)
