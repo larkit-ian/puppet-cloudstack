@@ -58,7 +58,8 @@ define cloudstack::pod(
   include ::cloudstack
   include ::cloudstack::cloudmonkey
 
-  $cmd = $::cloudstack::cloudmonkey::create_pod
+  $create_pod = $::cloudstack::cloudmonkey::create_pod
+  $cmd = inline_template("/usr/local/bin/<%= @create_pod %>")
 
   #$teststring_zone = inline_template( "<%= \"http://localhost:\" +
   #               \"${::cloudstack::mgmt_port}/?command=listZones&\" +

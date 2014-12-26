@@ -58,7 +58,8 @@ define cloudstack::cluster (
   include ::cloudstack
   include ::cloudstack::cloudmonkey
 
-  $cmd = $::cloudstack::cloudmonkey::add_cluster
+  $add_cluster = $::cloudstack::cloudmonkey::add_cluster
+  $cmd = inline_template("/usr/local/bin/<%= @add_cluster %>")
 
   #### NEED TO VERIFY THAT ZONEID AND PODID ARE VALID!
 #  $teststring_zone = inline_template( "<%= \"http://localhost:\" +
