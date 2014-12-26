@@ -1,7 +1,8 @@
+#
 # == Class: cloudstack::install
 #
-# This class installs the base CloudStack components for a management
-# server.
+#   This class installs the base CloudStack components for a management
+#   server.
 #
 # == Parameters
 #
@@ -16,7 +17,12 @@
 # == Requires
 #   (optional) puppetlabs/mysql
 #
+# == Notes
+# 
+#   Look for the FIXME stanzas...
+#
 class cloudstack::install {
+
   # Setup the repo.
   if $::cloudstack::setup_repo == true and $::osfamily == 'RedHat' {
     yumrepo{ 'cloudstack':
@@ -38,7 +44,7 @@ class cloudstack::install {
   }
 
   package { 'cloudstack-management':
-    ensure => latest,
+    ensure => installed,
     before => Anchor['anchor_swinstall_end']
   }
 

@@ -35,15 +35,15 @@ class cloudstack::nfs_common (
     hasstatus => true,
   }
   file {'/primary':
-    path   => $cs_pri_storage_mnt_point,
     ensure => directory,
+    path   => $cs_pri_storage_mnt_point,
     mode   => '0777',
     owner  => 'root',
     group  => 'root'
   }
   file {'/secondary':
-    path   => $cs_sec_storage_mnt_point,
     ensure => directory,
+    path   => $cs_sec_storage_mnt_point,
     mode   => '0777',
     owner  => 'root',
     group  => 'root'

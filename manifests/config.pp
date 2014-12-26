@@ -1,6 +1,7 @@
+#
 # == Class: cloudstack::config
 #
-# This class manages all of the CloudStack installation configuration elements.
+#   This class manages the CloudStack configuration elements.
 #
 # == Parameters
 #
@@ -15,47 +16,65 @@
 #
 # == Requires
 #
-# Sample Usage:
+# == Sample Usage
 #
-# TODO:
-#   Need to open up the unauthenticated API port JUST for localhost and
+# == Notes
+#
+#   FIXME:  Need to open up the unauthenticated API port JUST for localhost and
 #     firewall it from everything else.  But we need it to setup cs objects.
-#   This class could use a lot of cleanup love.  FIXME.
+#   FIXME:  This class could use a lot of cleanup love.
 #
 class cloudstack::config {
 
-  # Fixup for /etc/hosts.  2 parts.
-  # Part 1 - Clear out entries from /etc/hosts... this might be a little dangerous...
-  resources { 'host':
-    name  => 'host',
-    purge => true,
+  # Part 1 - Items for before the installation of cloudstack-management...
+
+  #   Part 1.1 - Sudo configuration.
+  #
+  #   FIXME - could this be a stanza in /etc/sudoers.d?  Depends on the OS.
+  #     Answer: make this more OS-sensitive.  Maybe use the sudo module?
+
+  file_line { 'cs_sudo_rule':
+    path   => '/etc/sudoers',
+    line   => 'cloud ALL = NOPASSWD : ALL',
+    before => Package['cloudstack-management']
   }
 
-  # Part 2 - Ensure the localhost entry.
+  #   Part 1.2 - Fixup for /etc/hosts.
+  #     Part 1.2.1 - Clear out entries from /etc/hosts...
+  #       (this might be a little dangerous...)
+
+  resources { 'host':
+    name  => 'host',
+    purge => true
+  }
+
+  #     Part 1.2.2 - Ensure the localhost entry.
+
   host { 'localhost':
     ensure       => present,
     ip           => '127.0.0.1',
     host_aliases => [ $::fqdn, 'localhost.localdomain', $::hostname ],
+    before       => Package['cloudstack-management']
   }
 
-  # Sudo configuration.
-  # FIXME - could this be a stanza in /etc/sudoers.d?  Depends on the OS.
-  # Answer: make this more OS-sensitive.  Maybe use the sudo module?
-  file_line { 'cs_sudo_rule':
-    path => '/etc/sudoers',
-    line => 'cloud ALL = NOPASSWD : ALL',
-  }
+  #   Part 1.3 - Disable SELinux.  I don't like doing this, but Cloudstack
+  #     says to do it, so for now...
+  #
+  #   	FIXME:  No need to replace the config file when disabling SELinux...
 
-  # FIXME:  No need to replace the config file when disabling SELinux...
   exec { 'disable_selinux':
     command => '/usr/sbin/setenforce 0',
     onlyif  => '/usr/sbin/getenforce | grep Enforcing',
   } ->
   file { '/etc/selinux/config':
-    source  => 'puppet:///modules/cloudstack/config',
+    source => 'puppet:///modules/cloudstack/config',
+    before => Package['cloudstack-management']
   }
 
-  # Now we want to configure the database.  Start with an anchor...
+  # Part 2 - Cloudstack is installed.  Now what?
+  #
+  #   Part 2.1 - Configure the database.  Start with an anchor.
+
   anchor { 'anchor_dbsetup_begin':
     before  => Anchor['anchor_dbsetup_end']
   }
@@ -66,17 +85,19 @@ class cloudstack::config {
   $dbstring = inline_template( "<%= \"/usr/bin/cloudstack-setup-databases \" +
               \"${::cloudstack::dbuser}:${::cloudstack::dbpassword}@${::cloudstack::dbhost} --deploy-as=${::cloudstack::dbdeployasuser}:${::cloudstack::dbrootpw}\" %>" )
 
+  #      Continue on by initializing the database.
   if $::cloudstack::localdb == true {
     exec { 'cloudstack_setup_localdb':
       command => $dbstring,
       creates => '/var/lib/mysql/cloud',
-      require => Class['::mysql::server'],
+      require => [ Anchor['anchor_dbsetup_begin'], Class['::mysql::server'], ],
       before  => Anchor['anchor_dbsetup_end']
     }
   } else {
     exec { 'cloudstack_setup_remotedb':
       command => $dbstring,
-      # FIXME:  How can we tell that the remote db is setup?  What needs to be in place?
+      # FIXME:  How can we tell that the remote db is setup?
+      #   What needs to be in place?
       # Answer:  A database query.  Check if the db exists...
       #   Need to verify that this works.
       unless  => "/usr/bin/mysql -u${::cloudstack::dbuser} -p${::cloudstack::dbpassword} -h ${::cloudstack::dbhost} cloud",
@@ -89,9 +110,9 @@ class cloudstack::config {
     before  => Anchor['anchor_misc_begin']
   }
 
-  # Misc. stuff...
+  # Part 3 - Misc bits.
   anchor { 'anchor_misc_begin':
-    require => Anchor['anchor_dbsetup_begin'],
+    require => Anchor['anchor_dbsetup_end'],
     before  => Anchor['anchor_misc_end']
   }
 

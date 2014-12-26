@@ -1,21 +1,41 @@
 #
 # == Class: cloudstack::cloudmonkey
-# == Purpose
-#   Install cloudmonkey on the management server for configuration
+# 
+#   Install cloudmonkey (Cloudstack CLI shell tool) configuration
 #   operations
+#
+# == Parameters
+#
+# == Actions
+#
+#   Installs some python modules
+#   Removes the packaged version of python-requests (if on RedHat-based systems)
+#   Install cloudmonkey via pip
+#   Install cloudmonkey-based support scripts for CS pod and cluster creation
+#
+# == Requires
+#
+# == Sample Usage
+#
+# == Notes
+#
+#   FIXME:  We don't want to use the support scripts for too long.
+#     Ultimately, we should go back to using the REST API.
 #
 class cloudstack::cloudmonkey {
 
-  # Prerequisites...
   $needed_packages = [ 'readline', 'python-setuptools' ]
+
+  # Prerequisites...
+  if $::osfamily == 'RedHat' {
+    package { 'python-requests':
+      ensure => absent,
+      before => Exec['install_cloudmonkey']
+    }
+  }
 
   package { $needed_packages:
     ensure => installed,
-    before => Exec['install_cloudmonkey']
-  }
-
-  package { 'python-requests':
-    ensure => absent,
     before => Exec['install_cloudmonkey']
   }
 
@@ -27,8 +47,6 @@ class cloudstack::cloudmonkey {
 
   # Utility scripts, since cloudstack has object IDs that are
   # a real pain to capture/consume via Puppet...
- 
-  $scriptnames = [ 'cm_create_pod.sh', 'cm_add_cluster.sh' ]
 
   File {
     ensure => present,
@@ -41,8 +59,8 @@ class cloudstack::cloudmonkey {
 
   file {
     '/usr/local/bin/cm_create_pod.sh':
-      source => "puppet:///modules/cloudstack/cm_create_pod.sh";
+      source => 'puppet:///modules/cloudstack/cm_create_pod.sh';
     '/usr/local/bin/cm_add_cluster.sh':
-      source => "puppet:///modules/cloudstack/cm_add_cluster.sh";
-  } 
+      source => 'puppet:///modules/cloudstack/cm_add_cluster.sh';
+  }
 }
