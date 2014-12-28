@@ -25,14 +25,13 @@
 #     Only used if $localdb is false.
 #
 #   $dbdeployasuser (string): Administrative user of the database.
-#     Defaults to 'root'.
 #
 #   $dbrootpw (string): Password for the administrative db user.
 #
 #   $install_cloudmonkey (boolean): If true, install Cloudmonkey.
 #
 #   $enable_remote_unauth_port (boolean): If true, allows remote connections to
-#     the unauthenticated API port ($mgmt_port).  Defaults to false.
+#     the unauthenticated API port ($mgmt_port).
 #     DO NOT ENABLE UNLESS YOU ARE ABSOLUTELY SURE ABOUT THIS!
 #
 # == Requires
@@ -74,7 +73,7 @@ class cloudstack (
   $dbrootpw                  = $::cloudstack::params::dbrootpw,
   $install_cloudmonkey       = $::cloudstack::params::install_cloudmonkey,
   $enable_remote_unauth_port = $::cloudstack::params::enable_remote_unauth_port
-) inherits cloudstack::params {
+) {
   validate_string($csversion, '4.[2345]')
   validate_bool($setup_repo)
   validate_string($mgmt_port)
