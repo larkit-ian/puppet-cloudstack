@@ -53,22 +53,28 @@ class cloudstack::cloudmonkey {
   # a real pain to capture/consume via Puppet...
 
   File {
-    ensure => present,
-    mode   => '0700',
-    owner  => 'root',
-    group  => 'root',
+    ensure  => present,
+    mode    => '0700',
+    owner   => 'root',
+    group   => 'root',
     # FIXME 1:  SELinux labels needed here.
     require => Exec['install_cloudmonkey']
   }
 
   # FIXME 2:  We shouldn't need these scripts at all.  We should
   # be making REST API calls.  But they're painful to make...
-  $add_cluster = 'cm_add_cluster.sh'
-  $create_pod = 'cm_create_pod.sh'
+  $list_cluster = $::cloudstack::params::list_cluster_cmd
+  $create_cluster = $::cloudstack::params::create_cluster_cmd
+  $list_pod = $::cloudstack::params::list_pod_cmd
+  $create_pod = $::cloudstack::params::create_pod_cmd
   file {
+    "/usr/local/bin/${list_pod}":
+      source => "puppet:///modules/cloudstack/${list_pod}";
     "/usr/local/bin/${create_pod}":
       source => "puppet:///modules/cloudstack/${create_pod}";
-    "/usr/local/bin/${add_cluster}":
-      source => "puppet:///modules/cloudstack/${add_cluster}";
+    "/usr/local/bin/${list_cluster}":
+      source => "puppet:///modules/cloudstack/${list_cluster}";
+    "/usr/local/bin/${create_cluster}":
+      source => "puppet:///modules/cloudstack/${create_cluster}";
   }
 }
