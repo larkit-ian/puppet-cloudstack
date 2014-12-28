@@ -74,7 +74,9 @@ define cloudstack::zone(
   $reststring = template('cloudstack/zone-reststring.erb')
 
   ensure_packages($packages_we_need)
+
   include ::cloudstack
+  include ::cloudstack::params
 
   exec { "check_zone_exists_${name}":
     command => "/usr/bin/curl ${reststring}",

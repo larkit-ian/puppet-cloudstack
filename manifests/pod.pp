@@ -52,14 +52,17 @@ define cloudstack::pod(
   # Things we need from the outside
   $mgmt_port = $::cloudstack::mgmt_port
 
-  $execparms1 = "\"${name}\" \"${zonename}\""
-  $execparms2 = "\"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\""
+  $createparm1 = "\"${name}\" \"${zonename}\""
+  $createparm2 = "\"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\""
 
   include ::cloudstack
+  include ::cloudstack::params
   include ::cloudstack::cloudmonkey
 
-  $create_pod = $::cloudstack::cloudmonkey::create_pod
-  $cmd = inline_template("/usr/local/bin/<%= @create_pod %>")
+  $list_pod_t = $::cloudstack::params::list_pod_cmd
+  $list_pod = inline_template("/usr/local/bin/<%= @list_pod_t %>")
+  $create_pod_t = $::cloudstack::params::create_pod_cmd
+  $create_pod = inline_template("/usr/local/bin/<%= @create_pod_t %>")
 
   #$teststring_zone = inline_template( "<%= \"http://localhost:\" +
   #               \"${::cloudstack::mgmt_port}/?command=listZones&\" +
@@ -75,7 +78,8 @@ define cloudstack::pod(
   # Is the zone there?
   #
   exec { "create_pod_${name}_in_zone_${zonename}":
-    command => "${cmd} ${execparms1} ${execparms2}",
+    command => "${create_pod} ${createparm1} ${createparm2}",
+    unless  => "${list_pod} ${zonename} ${name}",
     require => [
       Class['::cloudstack::cloudmonkey'],
       Cloudstack::Zone[$zonename]

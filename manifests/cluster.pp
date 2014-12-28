@@ -52,14 +52,17 @@ define cloudstack::cluster (
   # Things we need from the outside
   $mgmt_port = $::cloudstack::mgmt_port
 
-  $execparms = "\"${name}\" \"${clustertype}\" \"${hypervisor}\" \"${podname}\" \"${zonename}\""
-
+  $createparm1 = "\"${name}\" \"${clustertype}\""
+  $createparm2 = "\"${hypervisor}\" \"${podname}\" \"${zonename}\""
   
   include ::cloudstack
+  include ::cloudstack::params
   include ::cloudstack::cloudmonkey
 
-  $add_cluster = $::cloudstack::cloudmonkey::add_cluster
-  $cmd = inline_template("/usr/local/bin/<%= @add_cluster %>")
+  $list_cluster_t = $::cloudstack::params::list_cluster_cmd
+  $list_cluster = inline_template("/usr/local/bin/<%= @list_cluster_t %>")
+  $create_cluster_t = $::cloudstack::params::create_cluster_cmd
+  $create_cluster = inline_template("/usr/local/bin/<%= @create_cluster_t %>")
 
   #### NEED TO VERIFY THAT ZONEID AND PODID ARE VALID!
 #  $teststring_zone = inline_template( "<%= \"http://localhost:\" +
@@ -85,7 +88,8 @@ define cloudstack::cluster (
 #    ]
 #  }
   exec { "create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}":
-    command => "${cmd} ${execparms}",
+    command => "${create_cluster} ${createparm1} ${createparm2}",
+    unless  => "${list_cluster} ${zonename} ${podname} ${name}",
     require => [
       Class['::cloudstack::cloudmonkey'],
       Cloudstack::Pod[$podname]
