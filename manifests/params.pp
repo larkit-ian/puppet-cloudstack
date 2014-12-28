@@ -16,6 +16,10 @@ class cloudstack::params {
   $dbrootpw = 'rootpw'
   $install_cloudmonkey = true
   $enable_remote_unauth_port = false
+  $list_cluster_cmd = 'cm_list_cluster.sh'
+  $create_cluster_cmd = 'cm_create_cluster.sh'
+  $list_pod_cmd = 'cm_list_pod.sh'
+  $create_pod_cmd = 'cm_create_pod.sh'
 
   if $::osfamily == 'RedHat' {
     $libvirt_service_name = 'libvirtd'
