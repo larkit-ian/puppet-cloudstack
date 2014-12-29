@@ -8,7 +8,7 @@
 #
 #   $csversion (string): Set the version of Cloudstack to be used.
 #
-#   $setup_repo (boolean): Do we want this module to setup the yum repo?
+#   $setup_repo (boolean): Do we want to setup the yum repo?
 #
 #   $mgmt_port (string): Default port for unauthenticated management.
 #
@@ -59,6 +59,7 @@
 #
 # == Notes
 #
+#   FIXME:  I need a "manage_firewall" parameter so I can turn it off...
 #
 class cloudstack (
   $csversion                 = $::cloudstack::params::csversion,
@@ -72,8 +73,11 @@ class cloudstack (
   $dbdeployasuser            = $::cloudstack::params::dbdeployasuser,
   $dbrootpw                  = $::cloudstack::params::dbrootpw,
   $install_cloudmonkey       = $::cloudstack::params::install_cloudmonkey,
-  $enable_remote_unauth_port = $::cloudstack::params::enable_remote_unauth_port
-) {
+  $enable_remote_unauth_port = $::cloudstack::params::enable_remote_unauth_port,
+  $enable_aws_api            = $::cloudstack::params::enable_aws_api
+) inherits cloudstack::params {
+
+  # Validations
   validate_string($csversion, '4.[2345]')
   validate_bool($setup_repo)
   validate_string($mgmt_port)
@@ -86,15 +90,17 @@ class cloudstack (
   validate_string($dbrootpw)
   validate_bool($install_cloudmonkey)
   validate_bool($enable_remote_unauth_port)
+  validate_bool($enable_aws_api)
 
-  # FIXME - referencing the value of $dbpassword, ideally we should set
-  # the default value to '', then if we find that it wasn't specified as a
-  # parameter, we should randomly generate a password.
+  # Resources
 
-  anchor { '::cloudstack::begin': before => Anchor['::cloudstack::end'] }
-  class { '::cloudstack::install': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
-  class { '::cloudstack::config': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
-  #class { '::cloudstack::service': require => Anchor['::cloudstack::begin'], before => Anchor['::cloudstack::end'] }
-  anchor { '::cloudstack::end': require => Anchor['::cloudstack::begin'] }
+  anchor { [ '::cloudstack::begin', '::cloudstack::end' ]: }
+  class { [ '::cloudstack::install', '::cloudstack::config']: }
 
+  # Dependencies
+
+  Anchor['::cloudstack::begin'] ->
+    Class['::cloudstack::install'] ->
+    Class['::cloudstack::config'] ->
+    Anchor['::cloudstack::end']
 }

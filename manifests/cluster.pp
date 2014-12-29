@@ -1,7 +1,7 @@
 #
 # == Defined resource type: cloudstack::cluster
 #
-#   This defined type is used to identify a CloudStack cluster
+#   Create a Cloudstack Cluster object inside a specified pod and zone
 #
 # == Parameters
 #
@@ -37,32 +37,21 @@ define cloudstack::cluster (
   $zonename,
   $podname,
   $hypervisor,
-  $clustertype = 'CloudManaged'
+  $clustertype = $::cloudstack::params::clustertype
 ) {
-  validate_string($zonename)
-  validate_string($podname)
-  validate_string($hypervisor)
-  validate_re($hypervisor, [
-    'XenServer', 'KVM', 'VMware',
-    'Hyperv', 'BareMetal', 'Simulator'
-  ])
-  validate_string($clustertype)
-  validate_re($clustertype, [ 'CloudManaged', 'ExternalManaged' ])
 
-  # Things we need from the outside
-  $mgmt_port = $::cloudstack::mgmt_port
+  # Variables
+
+  $mgmt_port        = $::cloudstack::mgmt_port
+  $ospath           = $::cloudstack::params::ospath
+  $hypervisortypes  = $::cloudstack::params::hypervisortypes
+  $clustertypetypes = $::cloudstack::params::clustertypetypes
+  $list_cluster     = $::cloudstack::params::list_cluster_cmd
+  $create_cluster   = $::cloudstack::params::create_cluster_cmd
 
   $createparm1 = "\"${name}\" \"${clustertype}\""
   $createparm2 = "\"${hypervisor}\" \"${podname}\" \"${zonename}\""
-  
-  include ::cloudstack
-  include ::cloudstack::params
-  include ::cloudstack::cloudmonkey
 
-  $list_cluster_t = $::cloudstack::params::list_cluster_cmd
-  $list_cluster = inline_template("/usr/local/bin/<%= @list_cluster_t %>")
-  $create_cluster_t = $::cloudstack::params::create_cluster_cmd
-  $create_cluster = inline_template("/usr/local/bin/<%= @create_cluster_t %>")
 
   #### NEED TO VERIFY THAT ZONEID AND PODID ARE VALID!
 #  $teststring_zone = inline_template( "<%= \"http://localhost:\" +
@@ -79,7 +68,20 @@ define cloudstack::cluster (
 #                 \"clustername=${name}&clustertype=${clustertype}&\" +
 #                 \"hypervisor=${hypervisor}&zoneid=${zoneid}&\" +
 #                 \"podid=${podid}\" %>" )
-#
+
+  # Validations
+
+  validate_string($zonename)
+  validate_string($podname)
+  validate_string($hypervisor)
+  validate_re($hypervisor, $hypervisortypes)
+  validate_string($clustertype)
+  validate_re($clustertype, $clusttertypetypes)
+
+  # Resource declarations.  Start with includes.
+
+  include ::cloudstack::cloudmonkey
+
 #  exec { "/usr/bin/curl \'${reststring}\'":
 #    onlyif  => [
 #      "/usr/bin/curl \'${teststring_zone}\' | grep ${zoneid}",
@@ -90,9 +92,11 @@ define cloudstack::cluster (
   exec { "create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}":
     command => "${create_cluster} ${createparm1} ${createparm2}",
     unless  => "${list_cluster} ${zonename} ${podname} ${name}",
-    require => [
-      Class['::cloudstack::cloudmonkey'],
-      Cloudstack::Pod[$podname]
-    ]
+    path    => $ospath
   }
+
+  # Finally, our dependencies...
+
+  Class['::cloudstack::cloudmonkey'] -> Exec["create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}"]
+  Cloudstack::Pod[$podname] -> Exec["create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}"]
 }

@@ -5,6 +5,10 @@
 #
 # == Parameters
 #
+#   (optional) $csversion (string): Set the version of Cloudstack being used.
+#
+#   (optional) $setup_repo (boolean): Do we want to setup the yum repo?
+#
 # == Actions
 #
 #   Install base cloudstack agent
@@ -16,19 +20,25 @@
 # == Sample Usage
 #
 class cloudstack::kvmagent (
-  $csversion = '4.2',
-  $setup_repo = true,
-) {
+  $csversion = $::cloudstack::params::csversion,
+  $setup_repo = $::cloudstack::params::setup_repo
+) inherits cloudstack::params {
+
+  # Variables
+
+  # Validation
+
+  validate_string($csversion)
+  validate_bool($setup_repo)
+
+  # Resources
 
   class { '::cloudstack::common':
     csversion  => $csversion,
     setup_repo => $setup_repo,
-    before     => Package['cloudstack-agent']
   }
 
-  package { [ 'cloudstack-agent', 'wget' ]:
-    ensure  => present,
-  }
+  package { 'cloudstack-agent': ensure  => present }
 
 ########## We're okay up until this point...
 
@@ -56,18 +66,15 @@ class cloudstack::kvmagent (
 
   service { $libvirt_service_name:
     ensure    => running,
-    hasstatus => true,
+    hasstatus => true
   }
   
-  package { 'NetworkManager':
-    ensure => absent;
-  }
-
   service { 'network':
     ensure    => running,
-    hasstatus => true,
-    require   => Package['cloudstack-agent'],
+    hasstatus => true
   }
+
+  package { 'NetworkManager': ensure => absent }
 
   # FIXME
   # Needs params
@@ -84,9 +91,9 @@ class cloudstack::kvmagent (
 
   file { '/etc/cloudstack/agent/agent.properties':
     ensure  => present,
-    require => Package['cloudstack-agent'],
     content => template('cloudstack/agent.properties.erb'),
   }
+
 
 ################## Firewall stuff #########################
 #
@@ -121,4 +128,10 @@ class cloudstack::kvmagent (
 ### Make sure we cycle network after deploying a ifcfg.
 ### Do we handle creation of cloud-br0? I am thinking not, seems like there's a lot of magic there. For now, lets stay away from that.
 
+  # Resources
+
+  Class['::cloudstack::common'] ->
+    Package['cloudstack-agent'] ->
+    File['/etc/cloudstack/agent/agent.properties'] ->
+    Service['network']
 }

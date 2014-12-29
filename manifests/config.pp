@@ -3,124 +3,94 @@
 #
 #   This class manages the CloudStack configuration elements.
 #
-# == Parameters
-#
 # == Actions
 #
 #      Configure the database for CS usage 
 #      Configure Tomcat
 #      Configure some basic Firewall rules
 #
-# == Requires
-#
 # == Sample Usage
 #
-# == Notes
+#   This class isn't intended to be called directly.
 #
-#   FIXME:  Need more options for cloudstack-setup-databases
-#   FIXME:  Hardcoded path alert - need to take into account
-#     alternate locations for the sql db
-#   FIXME:  Test that the remote db is detected.
-#   FIXME:  We're currently forced into using cloudmonkey because we
-#     need it to enable the unauthenticated API port for configuring
-#     Cloudstack objects.  There's got to be a better way to do this.
-#   FIXME:  This class could use a lot of cleanup love.
-#
-class cloudstack::config {
+class cloudstack::config inherits cloudstack::params {
 
-  # Things we need from the outside...
+  # Variables
+
+  $mgmt_port                 = $::cloudstack::mgmt_port
+  $localdb                   = $::cloudstack::localdb
   $dbuser                    = $::cloudstack::dbuser
   $dbpassword                = $::cloudstack::dbpassword
   $dbhost                    = $::cloudstack::dbhost
   $dbdeployasuser            = $::cloudstack::dbdeployasuser
   $dbrootpw                  = $::cloudstack::dbrootpw
-  $mgmt_port                 = $::cloudstack::mgmt_port
-  $enable_aws_api            = $::cloudstack::enable_aws_api
-  $localdb                   = $::cloudstack::localdb
   $enable_remote_unauth_port = $::cloudstack::enable_remote_unauth_port
+  $enable_aws_api            = $::cloudstack::enable_aws_api
+  $cs_needed_ports           = $::cloudstack::params::cs_needed_ports
+  $ospath                    = $::cloudstack::params::ospath
 
   $setport = "update configuration name=integration.api.port value=${mgmt_port}"
 
-  # FIXME:  Need to provide for the possibility of using the
-  # "-e", "-m", "-k", and "-i" options.  And securing the database connection
-  # with SSL.  This may force the inline template below into a full-blown template for
-  # parsing the configuration options.
+  #   FIXME:  We should check if $dbpassword is set to the same as default and
+  #     offer the ability to generate a random one insteadl.
+  #   FIXME:  Need to provide for the possibility of using the
+  #     "-e", "-m", "-k", and "-i" options.  And securing the database
+  #     connection with SSL.  This may force the inline template below
+  #    into a full-blown template for parsing the configuration options.
   #
-  $dbstring = inline_template( "<%= \"/usr/bin/cloudstack-setup-databases \" +
-              \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
+  $dbstring = inline_template("<%= \"cloudstack-setup-databases \" +
+    \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
 
-  #      Continue on by initializing the database.
-  if $localdb == true {
+  $cycle_cs_mgmt1 = "sleep 20 ; cloudmonkey ${setport}"
+  $cycle_cs_mgmt2 = "service cloudstack-management restart ; sleep 20"
+  $cycle_cs_mgmt = "${cycle_cs_mgmt1} ; ${cycle_cs_mgmt2}"
+
+  # Resources
+
+  include ::cloudstack::cloudmonkey
+
+  if $localdb {
     exec { 'cloudstack_setup_localdb':
       command => $dbstring,
       creates => '/var/lib/mysql/cloud',  # FIXME: Hardcoded path alert!
-      require => [ Anchor['anchor_swinstall_end'], Class['::mysql::server'], ],
-      before  => Anchor['end_of_db']
+      path    => $ospath
     }
   } else {
     exec { 'cloudstack_setup_remotedb':
       command => $dbstring,
-      # FIXME:  How can we tell that the remote db is setup?
-      #   What needs to be in place?
-      # Answer:  A database query.  Check if the db exists...
-      #   Need to verify that this works.
-      unless  => "/usr/bin/mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud",
-      require => Anchor['anchor_swinstall_end'],
-      before  => Anchor['end_of_db']
+      # FIXME:  Untested.
+      unless  => "mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud",
+      path    => $ospath
     }
   }
 
-  # Misc bits.
-  anchor { 'end_of_db':
-    before  => Anchor['end_of_misc']
-  }
-
   exec { 'cs_setup_mgmt':
-    command => '/usr/bin/cloudstack-setup-management',
-    unless  => '/usr/bin/test -e /etc/sysconfig/cloudstack-management',
-    require => Anchor['end_of_db'],
-    before  => Anchor['end_of_misc']
+    command => 'cloudstack-setup-management',
+    unless  => 'test -e /etc/sysconfig/cloudstack-management',
+    path    => $ospath
   }
-
-  # Tomcat config files
 
   file { '/etc/cloudstack/management/tomcat6.conf':
-    ensure  => 'link',
-    group   => '0',
-    mode    => '0777',
-    owner   => '0',
-    target  => 'tomcat6-nonssl.conf',
-    require => Exec['cs_setup_mgmt'],
-    before  => Anchor['end_of_misc']
+    ensure => 'link',
+    group  => '0',
+    owner  => '0',
+    mode   => '0777',
+    target => 'tomcat6-nonssl.conf'
   }
 
   file { '/usr/share/cloudstack-management/conf/server.xml':
-    ensure  => 'link',
-    group   => '0',
-    mode    => '0777',
-    owner   => '0',
-    target  => 'server-nonssl.xml',
-    require => Exec['cs_setup_mgmt'],
-    before  => Anchor['end_of_misc']
-  }
-
-  anchor { 'end_of_misc':
-    require => Anchor['end_of_db'],
-    before  => Anchor['service_hook']
+    ensure => 'link',
+    group  => '0',
+    owner  => '0',
+    mode   => '0777',
+    target => 'server-nonssl.xml'
   }
 
   service { 'cloudstack-management':
     ensure    => running,
     enable    => true,
-    hasstatus => true,
-    require   => Anchor['end_of_misc'],
-    before    => Anchor['service_hook']
+    hasstatus => true
   }
-
-  anchor { 'service_hook':
-    require => Anchor['end_of_misc'],
-  }
-
 
   # Configure the unauthenticated management port.  Only local for now...
   #
@@ -134,27 +104,14 @@ class cloudstack::config {
   #   Note that this resource may break the cloudstack-management service,
   #   since it's going to try to restart it right after it comes up the
   #   first time...
-  #
-  include ::cloudstack::cloudmonkey
 
   exec { 'enable_mgmt_port':
-    command => "/bin/sleep 20 ; /usr/bin/cloudmonkey ${setport} ; /sbin/service cloudstack-management restart ; /bin/sleep 20",
-    unless  => "/usr/sbin/lsof -i :${mgmt_port}",
-    require => [
-      Anchor['service_hook'],
-      Class['::cloudstack::cloudmonkey'],
-      Package['lsof']
-    ]
+    command => $cycle_cs_mgmt,
+    unless  => "lsof -i :${mgmt_port}",
+    path    => $ospath
   }
 
   # Firewall rules
-
-  firewall { '003 INPUT allow port 80':
-    chain  => 'INPUT',
-    dport  => '80',
-    proto  => 'tcp',
-    action => 'accept',
-  }
 
   #
   # Remote database?  No problem.  But if you're doing egress firewalling,
@@ -165,7 +122,7 @@ class cloudstack::config {
   #    chain  => 'OUTPUT',
   #    dport  => '3306',  # FIXME: Hardcoded port alert
   #    proto  => 'tcp',
-  #    action => 'accept',
+  #    action => 'accept'
   #  }
   #}
   #
@@ -177,53 +134,29 @@ class cloudstack::config {
   #     chain  => 'INPUT',
   #     dport  => '7080',  # FIXME: Hardcoded port alert
   #     proto  => 'tcp',
-  #     action => 'accept',
+  #     action => 'accept'
   #   }
   #
 
-  # Cloudstack-specific ports.  See
-  #   https://cwiki.apache.org/confluence/display/CLOUDSTACK/Ports+used+by+CloudStack
-
-  firewall { '120 permit 8080 - web interface':
-    chain  => 'INPUT',
-    dport  => '8080',  # FIXME: Hardcoded port alert
-    proto  => 'tcp',
-    action => 'accept',
-  }
-
   #   Unauthenticated API interface.  We don't want to open this by default.
   if $enable_remote_unauth_port {
-    notify { 'ALERT:  Opening the unauthenticated port is DANGEROUS!  Please be certain.': } ->
-    firewall { '130 permit unauthenticated API':
+    notify { 'remote_unauth_notify':
+      message => 'ALERT: Remote unauthed port is OPEN!  Please be certain.'
+    }
+    firewall { '130 INPUT cs-mgmt permit unauthenticated API':
       chain  => 'INPUT',
       dport  => $mgmt_port,
       proto  => 'tcp',
-      action => 'accept',
+      action => 'accept'
     }
   }
-  
-  #   I did not come up with this name.  I swear.  Go look at the web page.
-  firewall { '130 permit 3922 Secure System secure communication port':
-    chain  => 'INPUT',
-    dport  => '3922',
-    proto  => 'tcp',
-    action => 'accept',
-  }
+    
 
-  #   System VM to management unsecured communication port (
-  firewall { '8250 CPVM':
+  firewall { '130 Cloudstack management ports':
     chain  => 'INPUT',
-    dport  => '8250',
+    dport  => $cs_needed_ports,
     proto  => 'tcp',
-    action => 'accept',
-  }
-
-  # Cloudstack management cluster port
-  firewall { '120 permit 9090 cloudstack cluster management port':
-    chain  => 'INPUT',
-    dport  => '9090',
-    proto  => 'tcp',
-    action => 'accept',
+    action => 'accept'
   }
 
   # FIXME:  Need to deal with this stuff...  Potentially move it to zone creation....
@@ -244,4 +177,37 @@ class cloudstack::config {
 #   ]
 # }
 
+  anchor { 'end_of_db': }
+  anchor { 'service_hook': }
+
+  # Dependencies
+
+  #   If we're using a local db...
+  if $localdb {
+      Anchor['cs_swinstall_end'] -> Exec['cloudstack_setup_localdb']
+      Class['::mysql::server'] -> Exec['cloudstack_setup_localdb']
+      Exec['cloudstack_setup_localdb'] -> Anchor['end_of_db']
+  #   Otherwise, it's a remote db.  Goto Anchor['end_of_db']
+  } else {
+    Anchor['cs_swinstall_end'] ->
+      Exec['cloudstack_setup_remotedb'] ->
+      Anchor['end_of_db']
+  }
+
+  #   Setup mgmt + config files
+  Anchor['end_of_db'] ->
+    Exec['cs_setup_mgmt'] ->
+    File['/etc/cloudstack/management/tomcat6.conf'] ->
+    File['/usr/share/cloudstack-management/conf/server.xml'] ->
+    Service['cloudstack-management'] ->
+    Anchor['service_hook'] ->
+    Exec['enable_mgmt_port']
+
+  Class['::cloudstack::cloudmonkey'] -> Exec['enable_mgmt_port']
+  Package['lsof'] -> Exec['enable_mgmt_port']
+
+  if $enable_remote_unauth_port {
+    Notify['remote_unauth_notify'] ->
+      Firewall['130 INPUT cs-mgmt permit unauthenticated API']
+  }
 }

@@ -21,78 +21,65 @@
 #
 # == Notes
 # 
-#   Look for the FIXME stanzas...
-#
-class cloudstack::install {
+class cloudstack::install inherits cloudstack::params {
 
-  # Things we need from the outside...
-  $setup_repo = $::cloudstack::setup_repo
-  $csversion = $::cloudstack::csversion
-  $uses_xen = $::cloudstack::uses_xen
-  $localdb = $::cloudstack::localdb
-  $dbhost = $::cloudstack::dbhost
-  $dbrootpw = $::cloudstack::dbrootpw
-  $install_cloudmonkey = $::cloudstack::install_cloudmonkey
+  # Variables
+
+  $csversion            = $::cloudstack::csversion
+  $setup_repo           = $::cloudstack::setup_repo
+  $localdb              = $::cloudstack::localdb
+  $uses_xen             = $::cloudstack::uses_xen
+  $dbhost               = $::cloudstack::dbhost
+  $dbrootpw             = $::cloudstack::dbrootpw
+  $install_cloudmonkey  = $::cloudstack::install_cloudmonkey
+  $vhd_url              = $::cloudstack::params::vhd_url
+  $vhd_path             = $::cloudstack::params::vhd_path
+  $vhd_download_command = "wget ${vhd_url} -O ${vhd_path}/vhd_util"
+  $ospath               = $::cloudstack::params::ospath
+
+  $mysql_override_options = {
+    'mysqld' => {
+      'innodb_rollback_on_timeout' => '1',
+      'innodb_lock_wait_timeout'   => '500',
+      'max_connections'            => '350'
+    }
+  }
+
+  # Resources
+
+  if $install_cloudmonkey {
+    include cloudstack::cloudmonkey
+  }
 
   class { '::cloudstack::common':
     csversion  => $csversion,
     setup_repo => $setup_repo,
-    before     => Package['cloudstack-management']
   }
-
+  
   # Fix for known bug in 4.3 release...
   if $::operatingsystem == 'Ubuntu' and $csversion == '4.3' {
-    package { 'libmysql-java':
-      ensure => installed,
-      before => Package['cloudstack-management']
-    }
+    package { 'libmysql-java': ensure => installed }
   }
 
-  # FIXME:  I can do better than this...
-  if $::osfamily == 'RedHat' {
-    package { 'cloudstack-management':
-      ensure  => installed,
-      before  => Anchor['anchor_swinstall_end'],
-      require => Yumrepo['cloudstack']
-    }
-  } else {
-    package { 'cloudstack-management':
-      ensure => installed,
-      before => Anchor['anchor_swinstall_end'],
-    }
-  }
-
-  # FIXME: I can do these better...
-  package { 'wget': ensure => present } # Not needed after 2.2.9, see bug 11258
-  package { 'curl': ensure => present } # For the REST interface.
-  package { 'lsof': ensure => present } # For checking if the unauth port
+  package { 'cloudstack-management': ensure => installed }
+  package { 'lsof': ensure => installed } # For checking if the unauth port
                                         #   is listening
 
-  # We may need vhd-util...
-  if $uses_xen == true {
-    $vhd_url  = 'http://download.cloud.com.s3.amazonaws.com/tools/vhd-util'
-    $vhd_path = '/usr/share/cloudstack-common/scripts/vm/hypervisor/xenserver'
-    $vhd_download_command = "/usr/bin/wget ${vhd_url} -O ${vhd_path}/vhd_util"
-
+  if $uses_xen {
     exec { 'download_vhd_util':
       command => $vhd_download_command,
       creates => "${vhd_path}/vhd_util",
-      require => Package[ 'cloudstack-management', 'wget' ],
-      before  => File['vhd_util']
+      path    => $ospath
     }
     file { 'vhd_util':
       ensure => present,
       path   => "${vhd_path}/vhd_util",
       owner  => 'root',
       group  => 'root',
-      mode   => '0755',
+      mode   => '0755'
       # FIXME:  Need to set SELinux permissions...
-      before => Anchor['anchor_swinstall_end']
     }
   }
-
-  # And now we come to the end of software installation.
-  anchor { 'anchor_swinstall_end': }
 
   $remotedbhost = $localdb ? {
     true  => 'localhost',
@@ -100,24 +87,36 @@ class cloudstack::install {
   }
 
   if $localdb == true {
-    $override_options = {
-      'mysqld' => {
-        'innodb_rollback_on_timeout' => '1',
-        'innodb_lock_wait_timeout'   => '500',
-        'max_connections'            => '350'
-      }
-    }
     class { '::mysql::server':
       root_password           => $dbrootpw,
-      override_options        => $override_options,
+      override_options        => $mysql_override_options,
       remove_default_accounts => true,
-      service_enabled         => true,
-      require                 => Anchor['anchor_swinstall_end'],
+      service_enabled         => true
     }
   }
 
-  # If we want cloudmonkey...
-  if $install_cloudmonkey {
-    include cloudstack::cloudmonkey
+  anchor { 'cs_swinstall_end': }
+
+  # Dependencies
+
+  if $::operatingsystem == 'Ubuntu' and $csversion == '4.3' {
+    Package['libmysql-java'] -> Package['cloudstack-management']
+  }
+  if $setup_repo and $::osfamily == 'RedHat' {
+    Yumrepo['cloudstack'] -> Package['cloudstack-management']
+  }
+  Anchor['cs_common_complete'] ->
+    Package['cloudstack-management'] ->
+    Anchor['cs_swinstall_end']
+
+  if $uses_xen {
+    #Package['wget'] -> Exec['download_vhd_util']
+    Package['cloudstack-management'] ->
+      Exec['download_vhd_util'] ->
+      File['vhd_util'] ->
+      Anchor['cs_swinstall_end']
+  }
+  if $localdb {
+    Anchor['cs_swinstall_end'] -> Class['::mysql::server']
   }
 }

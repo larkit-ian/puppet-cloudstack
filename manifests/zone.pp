@@ -50,41 +50,46 @@
 #   to the REST line as needed.
 #
 define cloudstack::zone(
-  $zone_dns              = '8.8.8.8',
+  $zone_dns              = $::cloudstack::params::zone_dns,
   $zone_dns2             = '',
-  $zone_internal_dns     = '8.8.8.8',
+  $zone_internal_dns     = $::cloudstack::params::zone_internal_dns,
   $zone_internal_dns2    = '',
-  $networktype           = 'Basic',
+  $networktype           = $::cloudstack::params::networktype,
   $networkdomain         = ''
 ) {
+
+  # Variables
+
+  $mgmt_port        = $::cloudstack::mgmt_port
+  $ospath           = $::cloudstack::params::ospath
+  $networktypetypes = $::cloudstack::params::networktypetypes
+
+  #$teststring = inline_template("http://localhost:<%= @mgmt_port %>/?command=listZones&name=<%= @name %>")
+  $teststring = "http://localhost:${mgmt_port}/?command=listZones&name=${name}"
+  $reststring = template('cloudstack/zone-reststring.erb')
+
+  # Validations
+
   validate_string($zone_dns)
   validate_string($zone_dns2)
   validate_string($zone_internal_dns)
   validate_string($zone_internal_dns2)
   validate_string($networktype)
-  validate_re($networktype, [ '^Basic$', '^Advanced$' ])
+  validate_re($networktype, $networktypetypes)
   validate_string($networkdomain)
 
-  # Things we need from the outside
-  $mgmt_port = $::cloudstack::mgmt_port
-
-  $packages_we_need = 'curl'
-
-  $teststring = inline_template("http://localhost:<%= @mgmt_port %>/?command=listZones&name=<%= @name %>")
-  $reststring = template('cloudstack/zone-reststring.erb')
-
-  ensure_packages($packages_we_need)
+  # Resource declarations.  Start with includes.
 
   include ::cloudstack
-  include ::cloudstack::params
 
   exec { "check_zone_exists_${name}":
-    command => "/usr/bin/curl ${reststring}",
-    unless  => "/usr/bin/curl -s \"${teststring}\" | /bin/grep -q ${name} 2>/dev/null",
-    require => [
-      Service['cloudstack-management'],
-      Package['curl'],
-      Exec['enable_mgmt_port']
-    ]
+    command => "curl ${reststring}",
+    unless  => "curl -s \"${teststring}\" | grep -q ${name} 2>/dev/null",
+    path    => $ospath
   }
+
+  # Finally, our dependencies...
+
+  Service['cloudstack-management'] -> Exec["check_zone_exists_${name}"]
+  Exec['enable_mgmt_port']         -> Exec["check_zone_exists_${name}"]
 }

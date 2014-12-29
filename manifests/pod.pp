@@ -43,26 +43,16 @@ define cloudstack::pod(
   $gateway
 ) {
 
-  validate_string($zonename)
-  validate_string($startip)
-  validate_string($netmask)
-  validate_string($endip)
-  validate_string($gateway)
+  # Variables
 
-  # Things we need from the outside
-  $mgmt_port = $::cloudstack::mgmt_port
+  $mgmt_port  = $::cloudstack::mgmt_port
+  $ospath     = $::cloudstack::params::ospath
+  $list_pod   = $::cloudstack::params::list_pod_cmd
+  $create_pod = $::cloudstack::params::create_pod_cmd
 
   $createparm1 = "\"${name}\" \"${zonename}\""
   $createparm2 = "\"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\""
 
-  include ::cloudstack
-  include ::cloudstack::params
-  include ::cloudstack::cloudmonkey
-
-  $list_pod_t = $::cloudstack::params::list_pod_cmd
-  $list_pod = inline_template("/usr/local/bin/<%= @list_pod_t %>")
-  $create_pod_t = $::cloudstack::params::create_pod_cmd
-  $create_pod = inline_template("/usr/local/bin/<%= @create_pod_t %>")
 
   #$teststring_zone = inline_template( "<%= \"http://localhost:\" +
   #               \"${::cloudstack::mgmt_port}/?command=listZones&\" +
@@ -75,14 +65,26 @@ define cloudstack::pod(
   #               \"gateway=${gateway}&name=${name}&netmask=${netmask}&\" +
   #               \"startip=${startip}&endip=${endip}&zoneid=${zoneid}\" %>" )
 
-  # Is the zone there?
-  #
+  # Validations
+
+  validate_string($zonename)
+  validate_string($startip)
+  validate_string($netmask)
+  validate_string($endip)
+  validate_string($gateway)
+
+  # Resource declarations.  Start with includes.
+
+  include ::cloudstack::cloudmonkey
+
   exec { "create_pod_${name}_in_zone_${zonename}":
     command => "${create_pod} ${createparm1} ${createparm2}",
     unless  => "${list_pod} ${zonename} ${name}",
-    require => [
-      Class['::cloudstack::cloudmonkey'],
-      Cloudstack::Zone[$zonename]
-    ]
+    path    => $ospath
   }
+
+  # Finally, our dependencies...
+
+  Class['::cloudstack::cloudmonkey'] -> Exec["create_pod_${name}_in_zone_${zonename}"]
+  Cloudstack::Zone[$zonename] -> Exec["create_pod_${name}_in_zone_${zonename}"]
 }
