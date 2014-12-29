@@ -38,6 +38,7 @@ class cloudstack::config inherits cloudstack::params {
   #     "-e", "-m", "-k", and "-i" options.  And securing the database
   #     connection with SSL.  This may force the inline template below
   #    into a full-blown template for parsing the configuration options.
+  #   FIXME:  Yes, we leak the db password out into the logs.  Not good.
   #
   $dbstring = inline_template("<%= \"cloudstack-setup-databases \" +
     \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
@@ -59,7 +60,7 @@ class cloudstack::config inherits cloudstack::params {
   } else {
     exec { 'cloudstack_setup_remotedb':
       command => $dbstring,
-      # FIXME:  Untested.
+      # FIXME:  We're leaking the db password into the logs.  Not good.
       unless  => "mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud",
       path    => $ospath
     }
