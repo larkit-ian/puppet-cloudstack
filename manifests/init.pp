@@ -49,7 +49,6 @@
 #   class { 'cloudstack':
 #     csversion           => '4.4',
 #     uses_xen            => true,
-#     install_cloudmonkey => true,
 #     localdb             => false,
 #     dbuser              => 'csuser',
 #     dbpassword          => $dbpassword,
