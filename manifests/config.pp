@@ -42,8 +42,8 @@ class cloudstack::config inherits cloudstack::params {
   $dbstring = inline_template("<%= \"cloudstack-setup-databases \" +
     \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
 
-  $cycle_cs_mgmt1 = "sleep 20 ; cloudmonkey ${setport}"
-  $cycle_cs_mgmt2 = 'service cloudstack-management restart ; sleep 20'
+  $cycle_cs_mgmt1 = "sleep 20 ; cloudmonkey ${setport} ; service cloudstack-management restart"
+  $cycle_cs_mgmt2 = "until nc -w 1 localhost ${mgmt_port} ; do sleep 2 ; done"
   $cycle_cs_mgmt = "${cycle_cs_mgmt1} ; ${cycle_cs_mgmt2}"
 
   # Resources
@@ -64,6 +64,8 @@ class cloudstack::config inherits cloudstack::params {
       path    => $ospath
     }
   }
+
+  package { 'nc': ensure => installed }
 
   exec { 'cs_setup_mgmt':
     command => 'cloudstack-setup-management',
@@ -152,7 +154,6 @@ class cloudstack::config inherits cloudstack::params {
         action => 'accept'
       }
     }
-    
 
     firewall { '130 Cloudstack management ports':
       chain  => 'INPUT',
