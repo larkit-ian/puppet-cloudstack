@@ -4,8 +4,6 @@
 #   Install cloudmonkey (Cloudstack CLI shell tool) configuration
 #   operations
 #
-# == Parameters
-#
 # == Actions
 #
 #   Installs some python modules
@@ -13,38 +11,39 @@
 #   Install cloudmonkey via pip
 #   Install cloudmonkey-based support scripts for CS pod and cluster creation
 #
-# == Requires
-#
 # == Sample Usage
 #
-# == Notes
+#   include ::cloudstack::cloudmonkey
 #
-#   FIXME 1:  We need SELinux labels.
-#   FIXME 2:  We don't want to use the support scripts for too long.
-#     Ultimately, we should go back to using the REST API.
-#
-class cloudstack::cloudmonkey {
+class cloudstack::cloudmonkey (
+) inherits cloudstack::params {
 
   # Variables
 
+  $ospath                = $::cloudstack::params::ospath
+  $list_cluster          = $::cloudstack::params::list_cluster_cmd
+  $create_cluster        = $::cloudstack::params::create_cluster_cmd
+  $list_pod              = $::cloudstack::params::list_pod_cmd
+  $create_pod            = $::cloudstack::params::create_pod_cmd
+  $cm_unneeded_package_flag = $::cloudstack::params::cm_unneeded_package_flag
+  $cm_unneeded_pkglist1    = $::cloudstack::params::cm_unneeded_pkglist1
+  $cm_unneeded_pkglist2    = $::cloudstack::params::cm_unneeded_pkglist2
+
   $needed_packages = [ 'readline', 'python-setuptools', 'python-pip' ]
-  $list_cluster = $::cloudstack::params::list_cluster_cmd
-  $create_cluster = $::cloudstack::params::create_cluster_cmd
-  $list_pod = $::cloudstack::params::list_pod_cmd
-  $create_pod = $::cloudstack::params::create_pod_cmd
 
   # Resources
 
-  if $::osfamily == 'RedHat' {
-    package { 'python-boto': ensure => absent }
-    package { 'python-requests': ensure => absent }
+  if $cm_unneeded_package_flag {
+    package { $cm_unneeded_pkglist1: ensure => absent }
+    package { $cm_unneeded_pkglist2: ensure => absent }
   }
 
   package { $needed_packages: ensure => installed }
 
   exec { 'install_cloudmonkey':
-    command => '/usr/bin/pip install cloudmonkey',
-    unless  => '/usr/bin/which cloudmonkey 2>/dev/null'
+    command => 'pip install cloudmonkey',
+    creates => '/usr/bin/cloudmonkey',
+    path    => $ospath
   }
 
   #   Utility scripts, since cloudstack has object IDs that are
@@ -73,9 +72,9 @@ class cloudstack::cloudmonkey {
 
   # Finally, our dependencies...
 
-  if $::osfamily == 'RedHat' {
-    Package['python-boto'] ->
-      Package['python-requests'] ->
+  if $cm_unneeded_package_flag {
+    Package[$cm_unneeded_pkglist1] ->
+      Package[$cm_unneeded_pkglist2] ->
       Exec['install_cloudmonkey']
   }
   Package[$needed_packages] ->

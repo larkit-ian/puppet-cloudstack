@@ -6,8 +6,14 @@ class { '::cloudstack':
 }
 
 cloudstack::zone { 'zone1': }
-cloudstack::zone { 'zone2': networkdomain => 'foo2.com', networktype => 'Basic' }
-cloudstack::zone { 'zone3': networkdomain => 'foo3.com', networktype => 'Advanced' }
+cloudstack::zone { 'zone2':
+  networkdomain => 'foo2.com',
+  networktype => 'Basic'
+}
+cloudstack::zone { 'zone3':
+  networkdomain => 'foo3.com',
+  networktype => 'Advanced'
+}
 
 cloudstack::pod { 'pod1':
   gateway  => '192.168.203.1',
