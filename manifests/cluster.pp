@@ -76,10 +76,11 @@ define cloudstack::cluster (
   validate_string($hypervisor)
   validate_re($hypervisor, $hypervisortypes)
   validate_string($clustertype)
-  validate_re($clustertype, $clusttertypetypes)
+  validate_re($clustertype, $clustertypetypes)
 
   # Resource declarations.  Start with includes.
 
+  include ::cloudstack::params
   include ::cloudstack::cloudmonkey
 
 #  exec { "/usr/bin/curl \'${reststring}\'":

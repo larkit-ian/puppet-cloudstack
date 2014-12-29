@@ -24,11 +24,12 @@
 #
 # == Sample Usage
 # 
-#   This class isn't intended to be called directly.
+#   Internal class.  Not intended to be called directly.
 #
 class cloudstack::common (
   $csversion         = $::cloudstack::params::csversion,
   $setup_repo        = $::cloudstack::params::setup_repo,
+  $manage_firewall   = $::cloudstack::params::manage_firewall,
   $repo_override_url = 'UNSET'
 ) inherits cloudstack::params {
 
@@ -130,21 +131,23 @@ class cloudstack::common (
 
   }
 
-  firewall { '001 INPUT allow icmp':
-    chain  => 'INPUT',
-    proto  => 'icmp',
-    action => 'accept'
-  }
-  firewall { '002 INPUT allow all to lo interface':
-    chain   => 'INPUT',
-    iniface => 'lo',
-    action  => 'accept'
-  }
-  firewall { '003 INPUT allow ssh':
-    chain  => 'INPUT',
-    dport  => '22',
-    proto  => 'tcp',
-    action => 'accept'
+  if $manage_firewall {
+    firewall { '001 INPUT allow icmp':
+      chain  => 'INPUT',
+      proto  => 'icmp',
+      action => 'accept'
+    }
+    firewall { '002 INPUT allow all to lo interface':
+      chain   => 'INPUT',
+      iniface => 'lo',
+      action  => 'accept'
+    }
+    firewall { '003 INPUT allow ssh':
+      chain  => 'INPUT',
+      dport  => '22',
+      proto  => 'tcp',
+      action => 'accept'
+    }
   }
 
   anchor { 'cs_common_complete': }

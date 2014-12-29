@@ -75,6 +75,7 @@ define cloudstack::pod(
 
   # Resource declarations.  Start with includes.
 
+  include ::cloudstack::params
   include ::cloudstack::cloudmonkey
 
   exec { "create_pod_${name}_in_zone_${zonename}":

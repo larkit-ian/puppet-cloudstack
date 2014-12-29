@@ -24,6 +24,7 @@ class cloudstack::config inherits cloudstack::params {
   $dbhost                    = $::cloudstack::dbhost
   $dbdeployasuser            = $::cloudstack::dbdeployasuser
   $dbrootpw                  = $::cloudstack::dbrootpw
+  $manage_firewall           = $::cloudstack::manage_firewall
   $enable_remote_unauth_port = $::cloudstack::enable_remote_unauth_port
   $enable_aws_api            = $::cloudstack::enable_aws_api
   $cs_needed_ports           = $::cloudstack::params::cs_needed_ports
@@ -42,7 +43,7 @@ class cloudstack::config inherits cloudstack::params {
     \"${dbuser}:${dbpassword}@${dbhost} --deploy-as=${dbdeployasuser}:${dbrootpw}\" %>" )
 
   $cycle_cs_mgmt1 = "sleep 20 ; cloudmonkey ${setport}"
-  $cycle_cs_mgmt2 = "service cloudstack-management restart ; sleep 20"
+  $cycle_cs_mgmt2 = 'service cloudstack-management restart ; sleep 20'
   $cycle_cs_mgmt = "${cycle_cs_mgmt1} ; ${cycle_cs_mgmt2}"
 
   # Resources
@@ -113,53 +114,55 @@ class cloudstack::config inherits cloudstack::params {
 
   # Firewall rules
 
-  #
-  # Remote database?  No problem.  But if you're doing egress firewalling,
-  # you'd better also capture NFS, DNS, and iSCSI.
-  #
-  #if $localdb == false {
-  #  firewall { '100 OUTPUT allow port 3306 out':
-  #    chain  => 'OUTPUT',
-  #    dport  => '3306',  # FIXME: Hardcoded port alert
-  #    proto  => 'tcp',
-  #    action => 'accept'
-  #  }
-  #}
-  #
-  # FIXME:  What if we want the AWS API server?  We'll need code for that
-  # and a firewall rule.  Here's one..
-  # 
-  # if $enable_aws_api {
-  #   firewall { '100 INPUT allow 7080 for AWS API':
-  #     chain  => 'INPUT',
-  #     dport  => '7080',  # FIXME: Hardcoded port alert
-  #     proto  => 'tcp',
-  #     action => 'accept'
-  #   }
-  #
+  if $manage_firewall {
+    #
+    # Remote database?  No problem.  But if you're doing egress firewalling,
+    # you'd better also capture NFS, DNS, and iSCSI.
+    #
+    #if $localdb == false {
+    #  firewall { '100 OUTPUT allow port 3306 out':
+    #    chain  => 'OUTPUT',
+    #    dport  => '3306',  # FIXME: Hardcoded port alert
+    #    proto  => 'tcp',
+    #    action => 'accept'
+    #  }
+    #}
+    #
+    # FIXME:  What if we want the AWS API server?  We'll need code for that
+    # and a firewall rule.  Here's one..
+    # 
+    # if $enable_aws_api {
+    #   firewall { '100 INPUT allow 7080 for AWS API':
+    #     chain  => 'INPUT',
+    #     dport  => '7080',  # FIXME: Hardcoded port alert
+    #     proto  => 'tcp',
+    #     action => 'accept'
+    #   }
+    #
 
-  #   Unauthenticated API interface.  We don't want to open this by default.
-  if $enable_remote_unauth_port {
-    notify { 'remote_unauth_notify':
-      message => 'ALERT: Remote unauthed port is OPEN!  Please be certain.'
+    #   Unauthenticated API interface.  We don't want to open this by default.
+    if $enable_remote_unauth_port {
+      notify { 'remote_unauth_notify':
+        message => 'ALERT: Remote unauthed port is OPEN!  Please be certain.'
+      }
+      firewall { '130 INPUT cs-mgmt permit unauthenticated API':
+        chain  => 'INPUT',
+        dport  => $mgmt_port,
+        proto  => 'tcp',
+        action => 'accept'
+      }
     }
-    firewall { '130 INPUT cs-mgmt permit unauthenticated API':
+    
+
+    firewall { '130 Cloudstack management ports':
       chain  => 'INPUT',
-      dport  => $mgmt_port,
+      dport  => $cs_needed_ports,
       proto  => 'tcp',
       action => 'accept'
     }
   }
-    
 
-  firewall { '130 Cloudstack management ports':
-    chain  => 'INPUT',
-    dport  => $cs_needed_ports,
-    proto  => 'tcp',
-    action => 'accept'
-  }
-
-  # FIXME:  Need to deal with this stuff...  Potentially move it to zone creation....
+    # FIXME:  Need to deal with this stuff...  Potentially move it to zone creation....
 ########## SecStorage ############
 ## NOTE: This will take a LONG time to run. Go get a cup of coffee
 # exec { 'mount ${cloudstack::cs_sec_storage_nfs_server}:${cloudstack::cs_sec_storage_mnt_point}  /mnt ;
@@ -206,7 +209,7 @@ class cloudstack::config inherits cloudstack::params {
   Class['::cloudstack::cloudmonkey'] -> Exec['enable_mgmt_port']
   Package['lsof'] -> Exec['enable_mgmt_port']
 
-  if $enable_remote_unauth_port {
+  if $manage_firewall and $enable_remote_unauth_port {
     Notify['remote_unauth_notify'] ->
       Firewall['130 INPUT cs-mgmt permit unauthenticated API']
   }

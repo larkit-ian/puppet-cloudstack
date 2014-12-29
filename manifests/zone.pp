@@ -81,6 +81,7 @@ define cloudstack::zone(
   # Resource declarations.  Start with includes.
 
   include ::cloudstack
+  include ::cloudstack::params
 
   exec { "check_zone_exists_${name}":
     command => "curl ${reststring}",

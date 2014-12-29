@@ -34,6 +34,8 @@
 #     the unauthenticated API port ($mgmt_port).
 #     DO NOT ENABLE UNLESS YOU ARE ABSOLUTELY SURE ABOUT THIS!
 #
+#   $manage_firewall (boolean): If true, add firewall rules.
+#
 # == Requires
 #
 #   Package[ 'sudo' ]
@@ -59,8 +61,6 @@
 #
 # == Notes
 #
-#   FIXME:  I need a "manage_firewall" parameter so I can turn it off...
-#
 class cloudstack (
   $csversion                 = $::cloudstack::params::csversion,
   $setup_repo                = $::cloudstack::params::setup_repo,
@@ -74,7 +74,8 @@ class cloudstack (
   $dbrootpw                  = $::cloudstack::params::dbrootpw,
   $install_cloudmonkey       = $::cloudstack::params::install_cloudmonkey,
   $enable_remote_unauth_port = $::cloudstack::params::enable_remote_unauth_port,
-  $enable_aws_api            = $::cloudstack::params::enable_aws_api
+  $enable_aws_api            = $::cloudstack::params::enable_aws_api,
+  $manage_firewall           = $::cloudstack::params::manage_firewall
 ) inherits cloudstack::params {
 
   # Validations

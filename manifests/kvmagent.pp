@@ -20,8 +20,9 @@
 # == Sample Usage
 #
 class cloudstack::kvmagent (
-  $csversion = $::cloudstack::params::csversion,
-  $setup_repo = $::cloudstack::params::setup_repo
+  $csversion       = $::cloudstack::params::csversion,
+  $setup_repo      = $::cloudstack::params::setup_repo
+  $manage_firewall = $::cloudstack::params::manage_firewall
 ) inherits cloudstack::params {
 
   # Variables
@@ -34,8 +35,9 @@ class cloudstack::kvmagent (
   # Resources
 
   class { '::cloudstack::common':
-    csversion  => $csversion,
-    setup_repo => $setup_repo,
+    csversion       => $csversion,
+    setup_repo      => $setup_repo,
+    manage_firewall => $manage_firewall
   }
 
   package { 'cloudstack-agent': ensure  => present }
@@ -98,22 +100,24 @@ class cloudstack::kvmagent (
 ################## Firewall stuff #########################
 #
 
-  firewall { '001 first range ':
-    proto  => 'tcp',
-    dport  => '49152-49216',
-    action => 'accept',
-  }
+  if $manage_firewall {
+    firewall { '001 first range ':
+      proto  => 'tcp',
+      dport  => '49152-49216',
+      action => 'accept',
+    }
 
-  firewall { '191 VNC rules':
-    proto  => 'tcp',
-    dport  => '5900-6100',
-    action => 'accept',
-  }
+    firewall { '191 VNC rules':
+      proto  => 'tcp',
+      dport  => '5900-6100',
+      action => 'accept',
+    }
 
-  firewall { '192 port 16509':
-    proto  => 'tcp',
-    dport  => '16509',
-    action => 'accept',
+    firewall { '192 port 16509':
+      proto  => 'tcp',
+      dport  => '16509',
+      action => 'accept',
+    }
   }
 
 # Need to do something that will take care of KVM - make sure module is loaded

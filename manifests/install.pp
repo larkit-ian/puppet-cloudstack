@@ -32,10 +32,12 @@ class cloudstack::install inherits cloudstack::params {
   $dbhost               = $::cloudstack::dbhost
   $dbrootpw             = $::cloudstack::dbrootpw
   $install_cloudmonkey  = $::cloudstack::install_cloudmonkey
+  $manage_firewall      = $::cloudstack::manage_firewall
+
   $vhd_url              = $::cloudstack::params::vhd_url
   $vhd_path             = $::cloudstack::params::vhd_path
-  $vhd_download_command = "wget ${vhd_url} -O ${vhd_path}/vhd_util"
   $ospath               = $::cloudstack::params::ospath
+  $vhd_download_command = "wget ${vhd_url} -O ${vhd_path}/vhd_util"
 
   $mysql_override_options = {
     'mysqld' => {
@@ -52,8 +54,9 @@ class cloudstack::install inherits cloudstack::params {
   }
 
   class { '::cloudstack::common':
-    csversion  => $csversion,
-    setup_repo => $setup_repo,
+    csversion       => $csversion,
+    setup_repo      => $setup_repo,
+    manage_firewall => $manage_firewall
   }
   
   # Fix for known bug in 4.3 release...

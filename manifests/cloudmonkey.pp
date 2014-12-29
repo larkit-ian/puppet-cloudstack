@@ -20,14 +20,14 @@ class cloudstack::cloudmonkey (
 
   # Variables
 
-  $ospath                = $::cloudstack::params::ospath
-  $list_cluster          = $::cloudstack::params::list_cluster_cmd
-  $create_cluster        = $::cloudstack::params::create_cluster_cmd
-  $list_pod              = $::cloudstack::params::list_pod_cmd
-  $create_pod            = $::cloudstack::params::create_pod_cmd
+  $ospath                   = $::cloudstack::params::ospath
+  $list_cluster             = $::cloudstack::params::list_cluster_cmd
+  $create_cluster           = $::cloudstack::params::create_cluster_cmd
+  $list_pod                 = $::cloudstack::params::list_pod_cmd
+  $create_pod               = $::cloudstack::params::create_pod_cmd
   $cm_unneeded_package_flag = $::cloudstack::params::cm_unneeded_package_flag
-  $cm_unneeded_pkglist1    = $::cloudstack::params::cm_unneeded_pkglist1
-  $cm_unneeded_pkglist2    = $::cloudstack::params::cm_unneeded_pkglist2
+  $cm_unneeded_pkglist1     = $::cloudstack::params::cm_unneeded_pkglist1
+  $cm_unneeded_pkglist2     = $::cloudstack::params::cm_unneeded_pkglist2
 
   $needed_packages = [ 'readline', 'python-setuptools', 'python-pip' ]
 

@@ -1,7 +1,7 @@
 #
 # == Class: cloudstack::params
 #
-#   This class manages the CloudStack parameter defaults.
+#   This class manages the CloudStack parameter and variable defaults.
 #
 class cloudstack::params {
   $csversion = '4.2'
@@ -29,6 +29,7 @@ class cloudstack::params {
   $clustertypetypes = [ '^CloudManaged$', '^ExternalManaged$' ]
   $hypervisortypes = [ '^XenServer$', '^KVM$', '^VMware$',
     '^Hyperv$', '^BareMetal$', '^Simulator$' ]
+  $manage_firewall = false
 
   $vhd_url  = 'http://download.cloud.com.s3.amazonaws.com/tools/vhd-util'
   $vhd_path = '/usr/share/cloudstack-common/scripts/vm/hypervisor/xenserver'
