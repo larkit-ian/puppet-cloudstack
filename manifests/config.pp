@@ -73,21 +73,24 @@ class cloudstack::config inherits cloudstack::params {
     path    => $ospath
   }
 
-  file { '/etc/cloudstack/management/tomcat6.conf':
-    ensure => 'link',
-    group  => '0',
-    owner  => '0',
-    mode   => '0777',
-    target => 'tomcat6-nonssl.conf'
-  }
+  #
+  #  Unneeded for RHEL/CentOS.  Need to check on Ubuntu...
+  #
+  #  file { '/etc/cloudstack/management/tomcat6.conf':
+  #  ensure => 'link',
+  #  group  => '0',
+  #  owner  => '0',
+  #  mode   => '0777',
+  #  target => 'tomcat6-nonssl.conf'
+  #}
 
-  file { '/usr/share/cloudstack-management/conf/server.xml':
-    ensure => 'link',
-    group  => '0',
-    owner  => '0',
-    mode   => '0777',
-    target => 'server-nonssl.xml'
-  }
+  #file { '/usr/share/cloudstack-management/conf/server.xml':
+  #  ensure => 'link',
+  #  group  => '0',
+  #  owner  => '0',
+  #  mode   => '0777',
+  #  target => 'server-nonssl.xml'
+  #}
 
   service { 'cloudstack-management':
     ensure    => running,
