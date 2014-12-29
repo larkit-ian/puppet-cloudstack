@@ -102,8 +102,14 @@ class cloudstack::common (
       #
       # FIXME:  No need to replace the config file when disabling SELinux...
       #
-      source => 'puppet:///modules/cloudstack/config'
-      # FIXME:  Need permissions here...
+      source => 'puppet:///modules/cloudstack/config',
+      owner    => 'root',
+      group    => 'root',
+      mode     => '0644',
+      seluser  => 'system_u',
+      selrole  => 'object_r',
+      seltype  => 'selinux_config_t',
+      selrange => 's0'
     }
   } elsif $::operatingsystem == 'Ubuntu' {
     exec { 'disable_aa_libvirtd_link':
