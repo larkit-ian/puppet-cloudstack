@@ -27,6 +27,7 @@ class cloudstack::install inherits cloudstack::params {
 
   $csversion            = $::cloudstack::csversion
   $setup_repo           = $::cloudstack::setup_repo
+  $repo_override_url    = $::cloudstack::repo_override_url
   $localdb              = $::cloudstack::localdb
   $uses_xen             = $::cloudstack::uses_xen
   $dbhost               = $::cloudstack::dbhost
@@ -54,9 +55,10 @@ class cloudstack::install inherits cloudstack::params {
   }
 
   class { '::cloudstack::common':
-    csversion       => $csversion,
-    setup_repo      => $setup_repo,
-    manage_firewall => $manage_firewall
+    csversion         => $csversion,
+    setup_repo        => $setup_repo,
+    manage_firewall   => $manage_firewall,
+    repo_override_url => $repo_override_url
   }
   
   # Fix for known bug in 4.3 release...

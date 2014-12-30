@@ -10,6 +10,8 @@
 #
 #   $setup_repo (boolean): Do we want to setup the yum repo?
 #
+#   $repo_override_url (string):  Override URL for the cloudstack repo.
+#
 #   $mgmt_port (string): Default port for unauthenticated management.
 #
 #   $localdb (boolean): Will the mysql database be located on this host?
@@ -67,6 +69,7 @@
 class cloudstack (
   $csversion                 = $::cloudstack::params::csversion,
   $setup_repo                = $::cloudstack::params::setup_repo,
+  $repo_override_url         = 'UNSET',
   $mgmt_port                 = $::cloudstack::params::mgmt_port,
   $localdb                   = $::cloudstack::params::localdb,
   $uses_xen                  = $::cloudstack::params::uses_xen,
