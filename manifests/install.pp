@@ -75,12 +75,15 @@ class cloudstack::install inherits cloudstack::params {
       path    => $ospath
     }
     file { 'vhd_util':
-      ensure => present,
-      path   => "${vhd_path}/vhd_util",
-      owner  => 'root',
-      group  => 'root',
-      mode   => '0755'
-      # FIXME:  Need to set SELinux permissions...
+      ensure   => present,
+      path     => "${vhd_path}/vhd_util",
+      owner    => 'root',
+      group    => 'root',
+      mode     => '0755',
+      seluser  => 'system_u',
+      selrole  => 'object_r',
+      seltype  => 'usr_t',
+      selrange => 's0'
     }
   }
 

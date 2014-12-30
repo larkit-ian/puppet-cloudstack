@@ -50,11 +50,14 @@ class cloudstack::cloudmonkey (
   #   a real pain to capture/consume via Puppet...
 
   File {
-    ensure  => present,
-    mode    => '0700',
-    owner   => 'root',
-    group   => 'root'
-  #   FIXME:  SELinux labels needed here.
+    ensure   => present,
+    mode     => '0700',
+    owner    => 'root',
+    group    => 'root',
+    seluser  => 'system_u',
+    selrole  => 'object_r',
+    seltype  => 'bin_t',
+    selrange => 's0'
   }
 
   #   FIXME:  We shouldn't need these scripts at all.  We should
