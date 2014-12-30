@@ -60,6 +60,10 @@
 #
 # == Notes
 #
+#   FIXME:  Need support overall for the ability to configure other CS
+#     parameters from the start, such as LDAP support, and other
+#     config settings that require a service restart.restart
+#
 class cloudstack (
   $csversion                 = $::cloudstack::params::csversion,
   $setup_repo                = $::cloudstack::params::setup_repo,
