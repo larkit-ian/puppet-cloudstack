@@ -50,18 +50,19 @@ class cloudstack::common (
 
   # Resources
 
-  resources { 'host':
-    name  => 'host',
-    purge => true
-  }
+  #resources { 'host':
+  #  name  => 'host',
+  #  purge => true
+  #}
 
   if $setup_repo and $::osfamily == 'RedHat' {
-    yumrepo{ 'cloudstack':
-      ensure   => present,
+    yumrepo { 'cloudstack':
+      name     => 'cloudstack',
+      #ensure   => present,  # Doesn't work in 3.2.3, so disabling...
       descr    => "Cloudstack ${csversion} repository",
       baseurl  => $repo_url,
       enabled  => '1',
-      gpgcheck => '0',
+      gpgcheck => '0'
     }
   }
 
@@ -98,18 +99,23 @@ class cloudstack::common (
       onlyif  => 'getenforce | grep Enforcing',
       path    => $ospath
     }
-    file { '/etc/selinux/config':
-      #
-      # FIXME:  No need to replace the config file when disabling SELinux...
-      #
-      source => 'puppet:///modules/cloudstack/config',
-      owner    => 'root',
-      group    => 'root',
-      mode     => '0644',
-      seluser  => 'system_u',
-      selrole  => 'object_r',
-      seltype  => 'selinux_config_t',
-      selrange => 's0'
+    #file { '/etc/selinux/config':
+    #  #
+    #  # FIXME:  No need to replace the config file when disabling SELinux...
+    #  #
+    #  source => 'puppet:///modules/cloudstack/config',
+    #  owner    => 'root',
+    #  group    => 'root',
+    #  mode     => '0644',
+    #  seluser  => 'system_u',
+    #  selrole  => 'object_r',
+    #  seltype  => 'selinux_config_t',
+    #  selrange => 's0'
+    #}
+    file_line { 'disable_selinux_config':
+      path  => '/etc/selinux/config',
+      line  => 'SELINUX=permissive',
+      match => '^SELINUX='
     }
   } elsif $::operatingsystem == 'Ubuntu' {
     exec { 'disable_aa_libvirtd_link':
@@ -168,7 +174,8 @@ class cloudstack::common (
 
   if $::osfamily == 'RedHat' {
       Exec['disable_selinux'] -> Anchor['cs_common_complete']
-      File['/etc/selinux/config'] -> Anchor['cs_common_complete']
+      #File['/etc/selinux/config'] -> Anchor['cs_common_complete']
+      File_line['disable_selinux_config'] -> Anchor['cs_common_complete']
   } elsif $::operatingsystem == 'Ubuntu' {
       Exec['disable_aa_libvirt_link'] ->
         Exec['disable_aa_helper_link'] ->

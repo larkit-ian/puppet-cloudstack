@@ -205,8 +205,8 @@ class cloudstack::config inherits cloudstack::params {
   #   Setup mgmt + config files
   Anchor['end_of_db'] ->
     Exec['cs_setup_mgmt'] ->
-    File['/etc/cloudstack/management/tomcat6.conf'] ->
-    File['/usr/share/cloudstack-management/conf/server.xml'] ->
+    #File['/etc/cloudstack/management/tomcat6.conf'] ->
+    #File['/usr/share/cloudstack-management/conf/server.xml'] ->
     Service['cloudstack-management'] ->
     Anchor['service_hook'] ->
     Exec['enable_mgmt_port']
