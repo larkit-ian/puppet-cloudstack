@@ -70,7 +70,7 @@ class cloudstack::nfs_common (
   }
 
   firewall {'100 INPUT NFS UDP ports':
-    chain  => 'INPUT'
+    chain  => 'INPUT',
     proto  => 'udp',
     dport  => [ '111', '32769', '892', '875', '662' ],
     action => 'accept'

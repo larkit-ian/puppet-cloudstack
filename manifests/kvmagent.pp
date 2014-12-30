@@ -21,7 +21,7 @@
 #
 class cloudstack::kvmagent (
   $csversion       = $::cloudstack::params::csversion,
-  $setup_repo      = $::cloudstack::params::setup_repo
+  $setup_repo      = $::cloudstack::params::setup_repo,
   $manage_firewall = $::cloudstack::params::manage_firewall
 ) inherits cloudstack::params {
 
