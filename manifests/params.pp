@@ -35,7 +35,6 @@ class cloudstack::params {
   $vhd_path = '/usr/share/cloudstack-common/scripts/vm/hypervisor/xenserver'
 
   $cs_needed_ports = [
-    '80',   # FIXME: Not sure why this is needed, but...
     '3922', # "Secure System secure communication port" - Not my naming!
     '8250', # "System VM to management unsecured communication port"
     '8080',  # "Cloudstack cluster management port"
