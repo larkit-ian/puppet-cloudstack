@@ -6,11 +6,7 @@ export TERM=vt100
 zonename=$1
 podname=$2
 
-zoneid=$(/usr/bin/cloudmonkey list zones name=${zonename} filter=id)
-
-# The grep at the end of this is due to a potential cloudmonkey regex bug that makes
-# it report partial name matches on objects, unfortunately.  This behavior exists in
-# Cloudmonkey 5.3.0 AND 5.3.1 (as of 20141230)
+zoneid=$(/usr/bin/cloudmonkey list zones name=${zonename} filter=name,id | grep -A 1 "name = ${zonename}$" | awk '/id = / {print $3}')
 
 podexists=$(/usr/bin/cloudmonkey list pods name=${podname} zoneid=${zoneid} filter=id,name | grep -q "^name = ${podname}$")
 ccstatus=$?

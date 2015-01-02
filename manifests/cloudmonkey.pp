@@ -45,6 +45,11 @@ class cloudstack::cloudmonkey (
     creates => '/usr/bin/cloudmonkey',
     path    => $ospath
   }
+  exec { 'configure_cm_display':
+    command => 'cloudmonkey set display default',
+    unless  => 'grep -q \'^display = default\' /root/.cloudmonkey/config',
+    path    => $ospath
+  }
 
   #   Utility scripts, since cloudstack has object IDs that are
   #   a real pain to capture/consume via Puppet...
@@ -78,10 +83,12 @@ class cloudstack::cloudmonkey (
   if $cm_unneeded_package_flag {
     Package[$cm_unneeded_pkglist1] ->
       Package[$cm_unneeded_pkglist2] ->
-      Exec['install_cloudmonkey']
+      Exec['install_cloudmonkey'] ->
+      Exec['configure_cm_display']
   }
   Package[$needed_packages] ->
     Exec['install_cloudmonkey'] ->
+    Exec['configure_cm_display'] ->
     File[
       "/usr/local/bin/${list_pod}",
       "/usr/local/bin/${create_pod}",

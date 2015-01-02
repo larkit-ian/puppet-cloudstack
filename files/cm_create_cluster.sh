@@ -15,8 +15,8 @@ hypervisor=$3
 podname=$4
 zonename=$5
 
-zoneid=$(/usr/bin/cloudmonkey list zones name=${zonename} filter=id)
-podid=$(/usr/bin/cloudmonkey list pods name=${podname} zoneid=${zoneid} filter=id)
+zoneid=$(/usr/bin/cloudmonkey list zones name=${zonename} filter=name,id | grep -A 1 "name = ${zonename}$" | awk '/id = / {print $3}')
+podid=$(/usr/bin/cloudmonkey list pods name=${podname} zoneid=${zoneid} filter=name,id | grep -A 1 "name = ${podname}$" | awk '/id = / {print $3}')
 
 /usr/bin/cloudmonkey add cluster clustername=${clustername} clustertype=${clustertype} hypervisor=${hypervisor} podid=${podid} zoneid=${zoneid}
 
