@@ -127,7 +127,6 @@ class cloudstack::common (
       onlyif  => 'dpkg --list \'apparmor\'',
       path    => $ospath
     }
-
   }
 
   if $manage_firewall {
