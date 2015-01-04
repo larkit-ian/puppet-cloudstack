@@ -49,7 +49,7 @@
 #   determines whether optional parameters have been passed and adds them
 #   to the REST line as needed.
 #
-define cloudstack::zone(
+define cloudstack::zone (
   $zone_dns              = $::cloudstack::params::zone_dns,
   $zone_dns2             = '',
   $zone_internal_dns     = $::cloudstack::params::zone_internal_dns,
@@ -64,8 +64,7 @@ define cloudstack::zone(
   $ospath           = $::cloudstack::params::ospath
   $networktypetypes = $::cloudstack::params::networktypetypes
 
-  #$teststring = inline_template("http://localhost:<%= @mgmt_port %>/?command=listZones&name=<%= @name %>")
-  $teststring = "http://localhost:${mgmt_port}/?command=listZones&name=${name}"
+  $teststring = "curl -s \'http://localhost:${mgmt_port}/?command=listZones&name=${name}&response=default\' | xgrep -s \'zone:name/${name}/\'"
   $reststring = template('cloudstack/zone-reststring.erb')
 
   # Validations
@@ -83,14 +82,15 @@ define cloudstack::zone(
   include ::cloudstack
   include ::cloudstack::params
 
-  exec { "check_zone_exists_${name}":
+  exec { "check_zone_exists__${name}":
     command => "curl ${reststring}",
-    unless  => "curl -s \"${teststring}\" | grep -q ${name} 2>/dev/null",
+    unless  => "${teststring} | grep -q ${name} 2>/dev/null",
     path    => $ospath
   }
 
   # Finally, our dependencies...
 
-  Service['cloudstack-management'] -> Exec["check_zone_exists_${name}"]
-  Exec['enable_mgmt_port']         -> Exec["check_zone_exists_${name}"]
+  Package['xgrep']                 -> Exec["check_zone_exists__${name}"]
+  Service['cloudstack-management'] -> Exec["check_zone_exists__${name}"]
+  Exec['enable_mgmt_port']         -> Exec["check_zone_exists__${name}"]
 }
