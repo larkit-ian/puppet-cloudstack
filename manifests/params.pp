@@ -17,9 +17,7 @@ class cloudstack::params {
   $install_cloudmonkey = true
   $enable_remote_unauth_port = false
   $enable_aws_api = false
-  $list_cluster_cmd = 'cm_list_cluster.sh'
   $create_cluster_cmd = 'cm_create_cluster.sh'
-  $list_pod_cmd = 'cm_list_pod.sh'
   $create_pod_cmd = 'cm_create_pod.sh'
   $zone_dns = '8.8.8.8'
   $zone_internal_dns = '8.8.8.8'
