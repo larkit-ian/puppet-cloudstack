@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Fix for cloudmonkey output display... Fixed in Cloudmonkey 5.3.1, but it isn't available yet...
+# Fix for cloudmonkey output display... Will be fixed in Cloudmonkey 5.3.1.
 export TERM=vt100
 
 podname=$1
