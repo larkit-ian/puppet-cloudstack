@@ -21,9 +21,7 @@ class cloudstack::cloudmonkey (
   # Variables
 
   $ospath                   = $::cloudstack::params::ospath
-  $list_cluster             = $::cloudstack::params::list_cluster_cmd
   $create_cluster           = $::cloudstack::params::create_cluster_cmd
-  $list_pod                 = $::cloudstack::params::list_pod_cmd
   $create_pod               = $::cloudstack::params::create_pod_cmd
   $cm_unneeded_package_flag = $::cloudstack::params::cm_unneeded_package_flag
   $cm_unneeded_pkglist1     = $::cloudstack::params::cm_unneeded_pkglist1
@@ -68,12 +66,8 @@ class cloudstack::cloudmonkey (
   #   FIXME:  We shouldn't need these scripts at all.  We should
   #   be making REST API calls.  But they're painful to make...
   file {
-    "/usr/local/bin/${list_pod}":
-      source => "puppet:///modules/cloudstack/${list_pod}";
     "/usr/local/bin/${create_pod}":
       source => "puppet:///modules/cloudstack/${create_pod}";
-    "/usr/local/bin/${list_cluster}":
-      source => "puppet:///modules/cloudstack/${list_cluster}";
     "/usr/local/bin/${create_cluster}":
       source => "puppet:///modules/cloudstack/${create_cluster}";
   }
@@ -90,9 +84,7 @@ class cloudstack::cloudmonkey (
     Exec['install_cloudmonkey'] ->
     Exec['configure_cm_display'] ->
     File[
-      "/usr/local/bin/${list_pod}",
       "/usr/local/bin/${create_pod}",
-      "/usr/local/bin/${list_cluster}",
       "/usr/local/bin/${create_cluster}"
     ]
 }
