@@ -46,28 +46,12 @@ define cloudstack::cluster (
   $ospath           = $::cloudstack::params::ospath
   $hypervisortypes  = $::cloudstack::params::hypervisortypes
   $clustertypetypes = $::cloudstack::params::clustertypetypes
-  $list_cluster     = $::cloudstack::params::list_cluster_cmd
   $create_cluster   = $::cloudstack::params::create_cluster_cmd
+
+  $teststring = "curl -s \'http://localhost:${mgmt_port}/?command=listClusters&name=${name}&response=default\' | xgrep -s \'cluster:zonename/${zonename}/,podname/${podname}/,name/${name}/\'"
 
   $createparm1 = "\"${name}\" \"${clustertype}\""
   $createparm2 = "\"${hypervisor}\" \"${podname}\" \"${zonename}\""
-
-
-  #### NEED TO VERIFY THAT ZONEID AND PODID ARE VALID!
-#  $teststring_zone = inline_template( "<%= \"http://localhost:\" +
-#                 \"${::cloudstack::mgmt_port}/?command=listZones&\" +
-#                 \"available=true\" %>" )
-#  $teststring_pod = inline_template( "<%= \"http://localhost:\" +
-#                 \"${::cloudstack::mgmt_port}/?command=listPods&\" +
-#                 \"available=true\" %>" )
-#  $teststring_cluster = inline_template( "<%= \"http://localhost:\" +
-#                 \"${::cloudstack::mgmt_port}/?command=listClusters&\" +
-#                 \"available=true\" %>" )
-#  $reststring = inline_template( "<%= \"http://localhost:\" +
-#                 \"${::cloudstack::mgmt_port}/?command=addCluster&\" +
-#                 \"clustername=${name}&clustertype=${clustertype}&\" +
-#                 \"hypervisor=${hypervisor}&zoneid=${zoneid}&\" +
-#                 \"podid=${podid}\" %>" )
 
   # Validations
 
@@ -83,21 +67,18 @@ define cloudstack::cluster (
   include ::cloudstack::params
   include ::cloudstack::cloudmonkey
 
-#  exec { "/usr/bin/curl \'${reststring}\'":
-#    onlyif  => [
-#      "/usr/bin/curl \'${teststring_zone}\' | grep ${zoneid}",
-#      "/usr/bin/curl \'${teststring_pod}\' | grep ${podid}",
-#      "/usr/bin/curl \'${teststring_cluster}\' | grep -v ${cluster}"
-#    ]
-#  }
-  exec { "create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}":
+  exec { "create_cluster__${name}__in_pod__${podname}__in_zone__${zonename}":
     command => "${create_cluster} ${createparm1} ${createparm2}",
-    unless  => "${list_cluster} ${zonename} ${podname} ${name}",
+    unless  => "${teststring} | grep -q ${name} 2>/dev/null",
     path    => $ospath
   }
 
   # Finally, our dependencies...
 
-  Class['::cloudstack::cloudmonkey'] -> Exec["create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}"]
-  Cloudstack::Pod[$podname] -> Exec["create_cluster_${name}_in_pod_${podname}_in_zone_${zonename}"]
+  Package['xgrep'] ->
+    Exec["create_cluster__${name}__in_pod__${podname}__in_zone__${zonename}"]
+  Class['::cloudstack::cloudmonkey'] ->
+    Exec["create_cluster__${name}__in_pod__${podname}__in_zone__${zonename}"]
+  Cloudstack::Pod[$podname] ->
+    Exec["create_cluster__${name}__in_pod__${podname}__in_zone__${zonename}"]
 }

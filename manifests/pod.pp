@@ -50,20 +50,10 @@ define cloudstack::pod(
   $list_pod   = $::cloudstack::params::list_pod_cmd
   $create_pod = $::cloudstack::params::create_pod_cmd
 
+  $teststring = "curl -s \'http://localhost:${mgmt_port}/?command=listPods&name=${name}&response=default\' | xgrep -s \'pod:zonename/${zonename}/,name/${name}/\'"
+
   $createparm1 = "\"${name}\" \"${zonename}\""
   $createparm2 = "\"${gateway}\" \"${netmask}\" \"${startip}\" \"${endip}\""
-
-
-  #$teststring_zone = inline_template( "<%= \"http://localhost:\" +
-  #               \"${::cloudstack::mgmt_port}/?command=listZones&\" +
-  #               \"available=true\" %>" )
-  #$teststring_pod = inline_template( "<%= \"http://localhost:\" +
-  #               \"${::cloudstack::mgmt_port}/?command=listPods&\" +
-  #               \"available=true\" %>" )
-  #$reststring = inline_template( "<%= \"http://localhost:\" +
-  #               \"${::cloudstack::mgmt_port}/?command=createPod&\" +
-  #               \"gateway=${gateway}&name=${name}&netmask=${netmask}&\" +
-  #               \"startip=${startip}&endip=${endip}&zoneid=${zoneid}\" %>" )
 
   # Validations
 
@@ -78,14 +68,16 @@ define cloudstack::pod(
   include ::cloudstack::params
   include ::cloudstack::cloudmonkey
 
-  exec { "create_pod_${name}_in_zone_${zonename}":
+  exec { "create_pod__${name}__in_zone__${zonename}":
     command => "${create_pod} ${createparm1} ${createparm2}",
-    unless  => "${list_pod} ${zonename} ${name}",
+    #unless  => "${list_pod} ${zonename} ${name}",
+    unless  => "${teststring} | grep -q ${name} 2>/dev/null",
     path    => $ospath
   }
 
   # Finally, our dependencies...
 
-  Class['::cloudstack::cloudmonkey'] -> Exec["create_pod_${name}_in_zone_${zonename}"]
-  Cloudstack::Zone[$zonename] -> Exec["create_pod_${name}_in_zone_${zonename}"]
+  Package['xgrep']                   -> Exec["create_pod__${name}__in_zone__${zonename}"]
+  Class['::cloudstack::cloudmonkey'] -> Exec["create_pod__${name}__in_zone__${zonename}"]
+  Cloudstack::Zone[$zonename]        -> Exec["create_pod__${name}__in_zone__${zonename}"]
 }
