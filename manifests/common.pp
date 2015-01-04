@@ -72,7 +72,7 @@ class cloudstack::common (
     host_aliases => [ $::fqdn, 'localhost.localdomain', $::hostname ]
   }
 
-  package { [ 'wget', 'curl' ]: ensure => installed }
+  package { [ 'wget', 'curl', 'xgrep' ]: ensure => installed }
 
   file_line { 'cs_sudo_rule':
     #
