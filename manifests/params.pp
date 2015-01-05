@@ -33,6 +33,8 @@ class cloudstack::params {
     '^Hyperv$', '^BareMetal$', '^Simulator$' ]
   $hypervisortypes_small = [ '^xenserver$', '^kvm$', '^vmware$', '^hyperv$' ]
   $manage_firewall = false
+  $sysvm_url_kvm = 'http://download.cloud.com/releases/2.2.0/systemvm.qcow2.bz2'
+  $sysvm_url_xen = 'http://download.cloud.com/releases/2.2.0/systemvm.vhd.bz2'
 
   # Want do use Xenserver?  You'll need vhd-util.  Here's the current URL
   # and where we place it on the management server:
