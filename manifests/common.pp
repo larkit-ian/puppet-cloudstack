@@ -74,13 +74,16 @@ class cloudstack::common (
 
   package { [ 'wget', 'curl', 'xgrep' ]: ensure => installed }
 
-  file_line { 'cs_sudo_rule':
-    #
-    #FIXME: The sudoers resources here should be implemented more safely.
-    # The current fashionable method is to drop a file into /etc/sudoers.d/
-    #
-    path => '/etc/sudoers',
-    line => 'cloud ALL = NOPASSWD : ALL'
+  file { '/etc/sudoers.d/cloudstack':
+    ensure   => present,
+    mode     => '0440',
+    owner    => 'root',
+    group    => 'root',
+    seluser  => 'system_u',
+    selrole  => 'object_r',
+    seltype  => 'etc_t',
+    selrange => 's0',
+    content  => 'cloud ALL=(ALL) NOPASSWD : ALL'
   }
 
   file_line { 'cs_cloud_norequiretty':
