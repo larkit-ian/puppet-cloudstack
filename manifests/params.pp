@@ -3,6 +3,10 @@
 #
 #   This class manages the CloudStack parameter and variable defaults.
 #
+# == Notes
+#
+#   All of these variables need to be documented somewhere...
+#
 class cloudstack::params {
   $csversion = '4.2'
   $setup_repo = true
@@ -27,10 +31,16 @@ class cloudstack::params {
   $clustertypetypes = [ '^CloudManaged$', '^ExternalManaged$' ]
   $hypervisortypes = [ '^XenServer$', '^KVM$', '^VMware$',
     '^Hyperv$', '^BareMetal$', '^Simulator$' ]
+  $hypervisortypes_small = [ '^xenserver$', '^kvm$', '^vmware$', '^hyperv$' ]
   $manage_firewall = false
+
+  # Want do use Xenserver?  You'll need vhd-util.  Here's the current URL
+  # and where we place it on the management server:
 
   $vhd_url  = 'http://download.cloud.com.s3.amazonaws.com/tools/vhd-util'
   $vhd_path = '/usr/share/cloudstack-common/scripts/vm/hypervisor/xenserver'
+
+  # Documented ports for firewalling...
 
   $cs_needed_ports = [
     '3922', # "Secure System secure communication port" - Not my naming!
@@ -38,6 +48,8 @@ class cloudstack::params {
     '8080',  # "Cloudstack cluster management port"
     '9090'  # "Cloudstack cluster management port"
   ]
+
+  # OS-specific items...
 
   case $::operatingsystem {
     'centos', 'redhat', 'fedora', 'scientific': {
