@@ -165,24 +165,6 @@ class cloudstack::config inherits cloudstack::params {
     }
   }
 
-    # FIXME:  Need to deal with this stuff...  Potentially move it to zone creation....
-########## SecStorage ############
-## NOTE: This will take a LONG time to run. Go get a cup of coffee
-# exec { 'mount ${cloudstack::cs_sec_storage_nfs_server}:${cloudstack::cs_sec_storage_mnt_point}  /mnt ;
-#   ${cloudstack::system_tmplt_dl_cmd} -m /mnt -u ${cloudstack::sysvm_url_kvm} -h kvm -F ;
-#   curl 'http://localhost:8096/?command=addSecondaryStorage&url=nfs://${cloudstack::cs_sec_storage_nfs_server}${cloudstack::cs_sec_storage_mnt_point}&zoneid=1' ;
-#   touch /var/lib/cloud/ssvm':
-#   onlyif => [ 'test ! -e /var/lib/cloud/ssvm', 'curl 'http://localhost:8096/?command=listZones&available=true' | grep Zone1',]
-# }
-
-########## Primary Storage ########
-### THis needs to add a check for a host to have been added
-# exec { 'curl 'http://localhost:8096/?command=createStoragePool&name=PStorage&url=nfs://${cloudstack::pri_storage_nfs_server}${cloudstack::pri_storage_mnt_point}&zoneid=4&podid=1'':
-#   onlyif => ['curl 'http://localhost:8096/?command=listPods' | grep Pod1',
-#     'curl 'http://localhost:8096/?command=listStoragePools' | grep -v PStorage',
-#   ]
-# }
-
   anchor { 'end_of_db': }
   anchor { 'service_hook': }
 
