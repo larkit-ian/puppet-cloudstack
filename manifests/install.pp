@@ -61,7 +61,11 @@ class cloudstack::install inherits cloudstack::params {
     repo_override_url => $repo_override_url
   }
   
-  # Fix for known bug in 4.3 release...
+  # Fix for known bug in 4.3 release... I'd love to abstract this out,
+  # remove the OS hardcoding, and remove the double-if for this (see the bottom
+  # of this manifest), but it would most likely obscure the logic.
+  # Not a net win, IMHO, so it stays here...
+
   if $::operatingsystem == 'Ubuntu' and $csversion == '4.3' {
     package { 'libmysql-java': ensure => installed }
   }
