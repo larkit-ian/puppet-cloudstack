@@ -82,15 +82,23 @@ define cloudstack::zone (
   include ::cloudstack
   include ::cloudstack::params
 
-  exec { "check_zone_exists__${name}":
+  exec { "create_zone__${name}":
     command => "curl ${reststring}",
     unless  => "${teststring} | grep -q ${name} 2>/dev/null",
     path    => $ospath
   }
 
+  exec { "cache_zone__${name}":
+    command => "curl \'http://localhost:${mgmt_port}/?command=listZones&name=${name}&response=default\' | xgrep -s \'zone:name/${name}/\' | grep \'<id>\' | sed -e \'s/<[^>]*>//g\' | awk \'{print \$1}\' > /var/tmp/cs_zoneid__${name}",
+    creates => "/var/tmp/cs_zoneid__${name}",
+    path    => $ospath
+  }
+
   # Finally, our dependencies...
 
-  Package['xgrep']                 -> Exec["check_zone_exists__${name}"]
-  Service['cloudstack-management'] -> Exec["check_zone_exists__${name}"]
-  Exec['enable_mgmt_port']         -> Exec["check_zone_exists__${name}"]
+  Package['xgrep']                 -> Exec["create_zone__${name}"]
+  Service['cloudstack-management'] -> Exec["create_zone__${name}"]
+  Exec['enable_mgmt_port']         -> Exec["create_zone__${name}"]
+
+  Exec["create_zone__${name}"] -> Exec["cache_zone__${name}"]
 }
