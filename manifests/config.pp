@@ -47,25 +47,22 @@ class cloudstack::config inherits cloudstack::params {
   $cycle_cs_mgmt2 = "until nc -w 1 localhost ${mgmt_port} ; do sleep 2 ; done"
   $cycle_cs_mgmt = "${cycle_cs_mgmt1} ; ${cycle_cs_mgmt2}"
 
+  if $localdb {
+    # FIXME: Hardcoded path alert!
+    $dbunless = 'test -d /var/lib/mysql/cloud'
+  } else {
+    # FIXME:  We're leaking the db password into the logs.  Not good.
+    $dbunless = "mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud"
+  }
   # Resources
 
   include ::cloudstack::cloudmonkey
 
-  if $localdb {
-    exec { 'cloudstack_setup_localdb':
-      command => $dbstring,
-      creates => '/var/lib/mysql/cloud',  # FIXME: Hardcoded path alert!
-      path    => $ospath
-    }
-  } else {
-    exec { 'cloudstack_setup_remotedb':
-      command => $dbstring,
-      # FIXME:  We're leaking the db password into the logs.  Not good.
-      unless  => "mysql -u${dbuser} -p${dbpassword} -h ${dbhost} cloud",
-      path    => $ospath
-    }
+  exec { 'cloudstack_setup_db':
+    command => $dbstring,
+    unless  => $dbunless,
+    path    => $ospath
   }
-
   package { 'nc': ensure => installed }
 
   exec { 'cs_setup_mgmt':
@@ -110,7 +107,8 @@ class cloudstack::config inherits cloudstack::params {
   #   that for now, ${::cloudstack::install_cloudmonkey} is meaningless...
   #   Note that this resource may break the cloudstack-management service,
   #   since it's going to try to restart it right after it comes up the
-  #   first time...
+  #   first time...  This may be in place until the zone/cluster/pod resources
+  #   are able to use the REST API with signed requests and a changed password.
 
   exec { 'enable_mgmt_port':
     command => $cycle_cs_mgmt,
@@ -135,7 +133,7 @@ class cloudstack::config inherits cloudstack::params {
     #}
     #
     # FIXME:  What if we want the AWS API server?  We'll need code for that
-    # and a firewall rule.  Here's one..
+    # and a firewall rule.  Here's one (incomplete implementation in this module overall)...
     # 
     # if $enable_aws_api {
     #   firewall { '100 INPUT allow 7080 for AWS API':
@@ -192,15 +190,11 @@ class cloudstack::config inherits cloudstack::params {
 
   #   If we're using a local db...
   if $localdb {
-      Anchor['cs_swinstall_end'] -> Exec['cloudstack_setup_localdb']
-      Class['::mysql::server'] -> Exec['cloudstack_setup_localdb']
-      Exec['cloudstack_setup_localdb'] -> Anchor['end_of_db']
-  #   Otherwise, it's a remote db.  Goto Anchor['end_of_db']
-  } else {
-    Anchor['cs_swinstall_end'] ->
-      Exec['cloudstack_setup_remotedb'] ->
-      Anchor['end_of_db']
+    Class['::mysql::server'] -> Exec['cloudstack_setup_db']
   }
+  Anchor['cs_swinstall_end'] ->
+    Exec['cloudstack_setup_db'] ->
+    Anchor['end_of_db']
 
   #   Setup mgmt + config files
   Anchor['end_of_db'] ->
