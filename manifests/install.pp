@@ -48,6 +48,13 @@ class cloudstack::install inherits cloudstack::params {
     }
   }
 
+  $cs_limits = "cloud soft nproc -1
+     cloud hard nproc -1
+     cloud hard nofile 4096
+     cloud soft nofile 4096
+     "
+
+
   # Resources
 
   if $install_cloudmonkey {
@@ -73,6 +80,18 @@ class cloudstack::install inherits cloudstack::params {
   package { 'cloudstack-management': ensure => installed }
   package { 'lsof': ensure => installed } # For checking if the unauth port
                                         #   is listening
+
+  file { '/etc/security/limits.d/cloudstack-limits.conf':
+    ensure   => present,
+    owner    => 'root',
+    group    => 'root',
+    mode     => '0644',
+    seluser  => 'system_u',
+    selrole  => 'object_r',
+    seltype  => 'usr_t',
+    selrange => 's0',
+    content  => $cs_limits
+  }
 
   if $uses_xen {
     exec { 'download_vhd_util':
@@ -119,6 +138,7 @@ class cloudstack::install inherits cloudstack::params {
   }
   Anchor['cs_common_complete'] ->
     Package['cloudstack-management'] ->
+    File['/etc/security/limits.d/cloudstack-limits.conf'] ->
     Anchor['cs_swinstall_end']
 
   if $uses_xen {
