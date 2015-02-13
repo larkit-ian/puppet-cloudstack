@@ -30,6 +30,12 @@
 #
 #   $dbrootpw (string): Password for the administrative db user.
 #
+#   $force_dbsetup (boolean): Force the run of cloudstack-setup-databases.
+#     Normally, this is false, and we assume that any setup where there's
+#     an already-existing database means that we're adding an additional
+#     manager node.  But if we actually want to redo the db setup, we
+#     can force it with this parameter.
+#
 #   $install_cloudmonkey (boolean): If true, install Cloudmonkey.
 #
 #   $enable_remote_unauth_port (boolean): If true, allows remote connections to
@@ -78,6 +84,7 @@ class cloudstack (
   $dbhost                    = $::cloudstack::params::dbhost,
   $dbdeployasuser            = $::cloudstack::params::dbdeployasuser,
   $dbrootpw                  = $::cloudstack::params::dbrootpw,
+  $force_dbsetup             = false,
   $install_cloudmonkey       = $::cloudstack::params::install_cloudmonkey,
   $enable_remote_unauth_port = $::cloudstack::params::enable_remote_unauth_port,
   $enable_aws_api            = $::cloudstack::params::enable_aws_api,
@@ -86,18 +93,13 @@ class cloudstack (
 
   # Validations
   validate_string($csversion, '4.[2345]')
-  validate_bool($setup_repo)
   validate_string($mgmt_port)
-  validate_bool($localdb)
-  validate_bool($uses_xen)
   validate_string($dbuser)
   validate_string($dbpassword)
   validate_string($dbhost)
   validate_string($dbdeployasuser)
   validate_string($dbrootpw)
-  validate_bool($install_cloudmonkey)
-  validate_bool($enable_remote_unauth_port)
-  validate_bool($enable_aws_api)
+  validate_bool($setup_repo,$localdb,$uses_xen,$install_cloudmonkey,$force_dbsetup,$enable_remote_unauth_port,$enable_aws_api)
 
   # Resources
 

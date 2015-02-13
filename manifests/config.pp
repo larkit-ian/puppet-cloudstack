@@ -24,6 +24,7 @@ class cloudstack::config inherits cloudstack::params {
   $dbhost                    = $::cloudstack::dbhost
   $dbdeployasuser            = $::cloudstack::dbdeployasuser
   $dbrootpw                  = $::cloudstack::dbrootpw
+  $force_dbsetup             = $::cloudstack::force_dbsetup
   $manage_firewall           = $::cloudstack::manage_firewall
   $enable_remote_unauth_port = $::cloudstack::enable_remote_unauth_port
   $enable_aws_api            = $::cloudstack::enable_aws_api
@@ -60,7 +61,7 @@ class cloudstack::config inherits cloudstack::params {
 
   exec { 'cloudstack_setup_db':
     command => $dbstring,
-    unless  => $dbunless,
+    unless  => "${dbunless} || ${force_dbsetup}",
     path    => $ospath
   }
   package { 'nc': ensure => installed }
