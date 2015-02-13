@@ -156,7 +156,7 @@ class cloudstack::common (
   # Dependencies
 
   Host['localhost']                      -> Anchor['cs_common_complete']
-  File_line['/etc/sudoers.d/cloudstack'] -> Anchor['cs_common_complete']
+  File['/etc/sudoers.d/cloudstack']      -> Anchor['cs_common_complete']
   File_line['cs_cloud_norequiretty']     -> Anchor['cs_common_complete']
   Package['wget']                        -> Anchor['cs_common_complete']
   Package['curl']                        -> Anchor['cs_common_complete']
