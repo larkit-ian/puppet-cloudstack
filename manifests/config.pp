@@ -34,7 +34,7 @@ class cloudstack::config inherits cloudstack::params {
   $setport = "update configuration name=integration.api.port value=${mgmt_port}"
 
   #   FIXME:  We should check if $dbpassword is set to the same as default and
-  #     offer the ability to generate a random one insteadl.
+  #     offer the ability to generate a random one instead.
   #   FIXME:  Need to provide for the possibility of using the
   #     "-e", "-m", "-k", and "-i" options.  And securing the database
   #     connection with SSL.  This may force the inline template below
@@ -59,12 +59,13 @@ class cloudstack::config inherits cloudstack::params {
 
   include ::cloudstack::cloudmonkey
 
+  package { 'nc': ensure => installed }
+
   exec { 'cloudstack_setup_db':
     command => $dbstring,
     unless  => "${dbunless} || ${force_dbsetup}",
     path    => $ospath
   }
-  package { 'nc': ensure => installed }
 
   exec { 'cs_setup_mgmt':
     command => 'cloudstack-setup-management',
@@ -73,7 +74,7 @@ class cloudstack::config inherits cloudstack::params {
   }
 
   #
-  #  Unneeded for RHEL/CentOS.  Need to check on Ubuntu...
+  #  Possibly unneeded for RHEL/CentOS.  Need to check on Ubuntu...
   #
   file { '/etc/cloudstack/management/tomcat6.conf':
     ensure => 'link',
