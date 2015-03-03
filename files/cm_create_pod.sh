@@ -10,6 +10,8 @@ netmask=$4
 startip=$5
 endip=$6
 
+/usr/bin/cloudmonkey set display=default
+
 zoneid=$(/usr/bin/cloudmonkey list zones name=${zonename} filter=name,id | grep -A 1 "name = ${zonename}$" | awk '/id = / {print $3}')
 
 /usr/bin/cloudmonkey create pod zoneid=${zoneid} name=${podname} gateway=${gateway} netmask=${netmask} startip=${startip} endip=${endip}

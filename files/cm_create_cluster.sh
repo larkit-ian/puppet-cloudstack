@@ -15,6 +15,8 @@ hypervisor=$3
 podname=$4
 zonename=$5
 
+/usr/bin/cloudmonkey set display=default
+
 zoneid=$(/usr/bin/cloudmonkey list zones name=${zonename} filter=name,id | grep -A 1 "name = ${zonename}$" | awk '/id = / {print $3}')
 podid=$(/usr/bin/cloudmonkey list pods name=${podname} zoneid=${zoneid} filter=name,id | grep -A 1 "name = ${podname}$" | awk '/id = / {print $3}')
 
