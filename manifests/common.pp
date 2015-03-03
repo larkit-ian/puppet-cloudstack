@@ -42,6 +42,9 @@ class cloudstack::common (
     default => $repo_override_url
   }
 
+  $sudo_content = 'cloud ALL=(ALL) NOPASSWD : ALL
+    Defaults:cloud !requiretty'
+
   # Validations
 
   validate_string($csversion)
@@ -83,17 +86,7 @@ class cloudstack::common (
     selrole  => 'object_r',
     seltype  => 'etc_t',
     selrange => 's0',
-    content  => 'cloud ALL=(ALL) NOPASSWD : ALL'
-  }
-
-  file_line { 'cs_cloud_norequiretty':
-    #
-    # Since we cannot know if there will ever be a KVM zone,
-    # and since the creation of zones is done via a "define",
-    # and since we only want to do this once, everyone gets this...
-    #
-    path => '/etc/sudoers',
-    line => 'Defaults:cloud !requiretty'
+    content  => $sudo_content
   }
 
   if $::osfamily == 'RedHat' {
@@ -157,7 +150,6 @@ class cloudstack::common (
 
   Host['localhost']                      -> Anchor['cs_common_complete']
   File['/etc/sudoers.d/cloudstack']      -> Anchor['cs_common_complete']
-  File_line['cs_cloud_norequiretty']     -> Anchor['cs_common_complete']
   Package['wget']                        -> Anchor['cs_common_complete']
   Package['curl']                        -> Anchor['cs_common_complete']
 
