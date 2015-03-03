@@ -7,19 +7,24 @@
 # == Parameters
 #
 # == Actions
+#   Install cloudmonkey.
 #   Install cloudstack-management package (and dependencies, including repo
-#     setup for $::osfamily == 'RedHat' and additional stuff for Ubuntu)
-#   Install the cloudstack-management package
-#   Download and install vhd_util if we’re using Xen
+#     setup for $::osfamily == 'RedHat' and additional stuff for Ubuntu).
+#   Download and install vhd_util if we’re using Xen.
 #     ($::cloudstack::uses_xen = true)
-#   Install cloud database only if MySQL is installed and configured
+#   If desired, install mysql using (via puppetlabs/mysql) to host the
+#     database.
 #     ($::cloudstack::localdb = true)
-#   Install cloudmonkey
 #
 # == Requires
 #   (optional) puppetlabs/mysql
 #
+# == Sample Usage
+#
+#   This class isn't intended to be called directly.
+#
 # == Notes
+#   FIXME: (RHEL only) Need to check for IBM java and fail if it's installed.
 # 
 class cloudstack::install inherits cloudstack::params {
 
@@ -38,6 +43,8 @@ class cloudstack::install inherits cloudstack::params {
   $vhd_url              = $::cloudstack::params::vhd_url
   $vhd_path             = $::cloudstack::params::vhd_path
   $ospath               = $::cloudstack::params::ospath
+  $fix_db_bug_43        = $::cloudstack::fix_db_bug_43
+
   $vhd_download_command = "wget ${vhd_url} -O ${vhd_path}/vhd_util"
 
   $mysql_override_options = {
@@ -80,6 +87,19 @@ class cloudstack::install inherits cloudstack::params {
   package { 'cloudstack-management': ensure => installed }
   package { 'lsof': ensure => installed } # For checking if the unauth port
                                         #   is listening
+
+  # Fix for CLOUDSTACK-8157
+
+  if $fix_db_bug_43 and $csversion == '4.3' and $::osfamily == 'RedHat' {
+    file { '/usr/share/cloudstack-management/setup/create-schema-premium.sql-CS8157':
+      ensure => present,
+      source => 'puppet:///modules/cloudstack/create-schema-premium.sql-CS8157'
+    }
+    exec { 'patch_cs43':
+      command => 'cd /usr/share/cloudstack/setup/db ; /bin/cp -f create-schema-premium.sql-CS8157 create-schema-premium.sql',
+      unless => 'diff /usr/share/cloudstack-management/setup/create-schema-premium.sql'
+    }
+  }
 
   file { '/etc/security/limits.d/cloudstack-limits.conf':
     ensure   => present,
@@ -140,6 +160,13 @@ class cloudstack::install inherits cloudstack::params {
     Package['cloudstack-management'] ->
     File['/etc/security/limits.d/cloudstack-limits.conf'] ->
     Anchor['cs_swinstall_end']
+
+  if $fix_db_bug_43 and $csversion == '4.3' and $::osfamily == 'RedHat' {
+    Package['cloudstack-mamagement'] ->
+      File['/usr/share/cloudstack-management/setup/create-schema-premium.sql-CS8157'] ->
+      Exec['patch_cs43'] ->
+      Anchor['cs_swinstall_end']
+  }
 
   if $uses_xen {
     #Package['wget'] -> Exec['download_vhd_util']

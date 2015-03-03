@@ -14,7 +14,10 @@
 #
 #   $mgmt_port (string): Default port for unauthenticated management.
 #
-#   $localdb (boolean): Will the mysql database be located on this host?
+#   $localdb (boolean): If we want this module to install mysql locally
+#     using the puppetlabs/mysql module.  If you want a localdb, but
+#     prefer to use your own module to install a database, you can
+#     set this to false and set $dbhost to 'localhost'.
 #
 #   $uses_xen (boolean): If we use Xen at all, set this so that we can
 #     download vhd_util.
@@ -44,10 +47,14 @@
 #
 #   $manage_firewall (boolean): If true, add firewall rules.
 #
+#   $fix_db_bug_43 (boolean): Workaround for CLOUDSTACK-8157 for CS 4.3 users.
+#
 # == Requires
 #
 #   Package[ 'sudo' ]
-#   (optional) puppetlabs/mysql
+#   (optional) puppetlabs/mysql or whatever other mysql install you desire.
+#     Beware of CLOUDSTACK-8157 if using CS 4.3 and either MySQL > 5.6 or
+#     Percona.
 #
 # == Sample Usage
 #
@@ -88,10 +95,12 @@ class cloudstack (
   $install_cloudmonkey       = $::cloudstack::params::install_cloudmonkey,
   $enable_remote_unauth_port = $::cloudstack::params::enable_remote_unauth_port,
   $enable_aws_api            = $::cloudstack::params::enable_aws_api,
-  $manage_firewall           = $::cloudstack::params::manage_firewall
+  $manage_firewall           = $::cloudstack::params::manage_firewall,
+  $fix_db_bug_43             = false
 ) inherits cloudstack::params {
 
   # Validations
+
   validate_string($csversion, '4.[2345]')
   validate_string($mgmt_port)
   validate_string($dbuser)
@@ -99,7 +108,10 @@ class cloudstack (
   validate_string($dbhost)
   validate_string($dbdeployasuser)
   validate_string($dbrootpw)
-  validate_bool($setup_repo,$localdb,$uses_xen,$install_cloudmonkey,$force_dbsetup,$enable_remote_unauth_port,$enable_aws_api)
+
+  validate_bool($setup_repo,$localdb,$uses_xen,$install_cloudmonkey)
+  validate_bool($force_dbsetup,$enable_remote_unauth_port,$enable_aws_api)
+  validate_bool($fix_db_bug_43)
 
   # Resources
 
